@@ -4,7 +4,7 @@ import styled from "styled-components";
 import { IoIosSearch, IoIosClose } from "react-icons/io";
 
 const Layout = styled.div`
-  position: absolute;
+  position: fixed;
   top: ${(props) => (props.$isModalOpen ? "0" : "-100%")};
   display: flex;
   align-items: center;

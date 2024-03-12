@@ -10,7 +10,7 @@ import SearchModal from "./SearchModal";
 import Backdrop from "../../common/Backdrop";
 
 const Layout = styled.header`
-  position: relative;
+  position: fixed;
   width: 100%;
   height: 90px;
   background-color: var(--color-white);
@@ -18,6 +18,7 @@ const Layout = styled.header`
 `;
 
 const Box = styled.div`
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;

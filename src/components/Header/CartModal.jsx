@@ -3,7 +3,7 @@ import ReactDOM from "react-dom";
 import styled from "styled-components";
 
 const Layout = styled.div`
-  position: absolute;
+  position: fixed;
   right: ${(props) => (props.$isModalOpen ? "0" : "-100%")};
   opacity: ${(props) => (props.$isModalOpen ? "1" : "0")};
   top: 0;

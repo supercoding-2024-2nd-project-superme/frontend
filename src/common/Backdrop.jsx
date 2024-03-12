@@ -13,9 +13,12 @@ const ModalBackdrop = styled.div`
 
 export default function Backdrop({ isModalOpen, handleModal }) {
   useEffect(() => {
-    document.body.style.overflow = "hidden";
-    return () => (document.body.style.overflow = "scroll");
-  }, []);
+    if (isModalOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "scroll";
+    }
+  }, [isModalOpen]);
 
   return <ModalBackdrop $isModalOpen={isModalOpen} onClick={handleModal} />;
 }

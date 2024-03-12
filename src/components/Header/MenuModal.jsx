@@ -7,7 +7,7 @@ import { FaFacebook, FaInstagram } from "react-icons/fa";
 import { GoPlus } from "react-icons/go";
 
 const Layout = styled.div`
-  position: absolute;
+  position: fixed;
   left: ${(props) => (props.$isModalOpen ? "0" : "-100%")};
   opacity: ${(props) => (props.$isModalOpen ? "1" : "0")};
   top: 0;

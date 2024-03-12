@@ -15,6 +15,7 @@ const Layout = styled.header`
   height: 90px;
   background-color: var(--color-white);
   border-bottom: 1px solid var(--color-lightgray);
+  z-index: 10;
 `;
 
 const Box = styled.div`

@@ -9,6 +9,7 @@ import CartModal from "./CartModal";
 import SearchModal from "./SearchModal";
 import Backdrop from "../../common/Backdrop";
 
+
 const Layout = styled.header`
   position: fixed;
   width: 100%;

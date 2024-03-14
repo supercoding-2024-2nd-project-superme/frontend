@@ -1,11 +1,3 @@
-import React from "react";
-import styled from "styled-components";
-
-const Layout = styled.main`
-  margin-top: 90px;
-`;
-
-const Login = () => {
 import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 

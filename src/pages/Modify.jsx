@@ -1,10 +1,8 @@
 import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import { loadDaumAddressAPI } from "../common/DaumAddressApi";
-import axios from "axios";
-import { SHA256 } from "crypto-js";
 
-const SignupWrapper = styled.div`
+const ModifyWrapper = styled.div`
   padding-top: 60px;
   padding-bottom: 60px;
   min-width: 700px;
@@ -12,17 +10,17 @@ const SignupWrapper = styled.div`
   overflow: auto;
 `;
 
-const SignupHeader = styled.div`
+const ModifyHeader = styled.div`
   margin-bottom: 50px;
   letter-spacing: 1.5px;
 `;
 
-const SignupTitle = styled.h1`
+const ModifyTitle = styled.h1`
   text-align: center;
   font-weight: 400;
 `;
 
-const SignupForm = styled.div`
+const ModifyForm = styled.div`
   margin: 0 auto;
   width: 400px;
 `;
@@ -78,17 +76,11 @@ const ErrorMessage = styled.div`
 `;
 
 const PasswordInfo = styled.div`
-  color: ${({ isValid }) => (isValid ? "green" : "red")};
+  color: gray; /* 변경: 비밀번호 정보 스타일 변경 */
   font-size: 14px;
   margin-top: -20px;
   padding-bottom: 20px;
   white-space: pre-line;
-`;
-
-const PasswordRequirement = styled.span`
-  font-size: 14px;
-  white-space: pre-line;
-  color: black;
 `;
 
 const RadioButtonLabel = styled.label`
@@ -121,7 +113,7 @@ const PreviewImage = styled.img`
   margin-left: 10px;
 `;
 
-const Signup = () => {
+const Modify = () => {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -136,8 +128,6 @@ const Signup = () => {
   const [addressDetail, setAddressDetail] = useState("");
   const [requiredFieldsError, setRequiredFieldsError] = useState("");
   const [isAddressAPIInitialized, setIsAddressAPIInitialized] = useState(false);
-  const [passwordMessage, setPasswordMessage] = useState("");
-  const [isValidPassword, setIsValidPassword] = useState(true);
 
   const handleFirstNameChange = (event) => {
     setFirstName(event.target.value);
@@ -175,12 +165,6 @@ const Signup = () => {
   const handleSubmit = (event) => {
     event.preventDefault();
 
-    // 주소와 상세 주소를 합친다음 제출을 합니다. (확실치는 않음, 백엔드에서 테스트 해봐야 할듯)
-    const fullAddress = `${address} ${addressDetail}`;
-
-    // 해시화한 비번을 전송.
-    const hashedPassword = SHA256(password).toString();
-
     if (
       !firstName ||
       !lastName ||
@@ -209,18 +193,11 @@ const Signup = () => {
     const newPassword = event.target.value;
     setPassword(newPassword);
 
-    // 해시화 함수
-    const hashedPassword = SHA256(newPassword).toString();
-
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,20}$/;
     if (!passwordRegex.test(newPassword)) {
-      setPasswordMessage(
-        "Your password does not meet the required conditions."
-      );
-      setIsValidPassword(false);
+      setPasswordError("Your password does not meet the required conditions.");
     } else {
-      setPasswordMessage("Your password meets the required conditions.");
-      setIsValidPassword(true);
+      setPasswordError("");
     }
   };
 
@@ -240,21 +217,13 @@ const Signup = () => {
     reader.readAsDataURL(file);
   };
 
-  const handleFileSubmit = (event) => {
-    event.preventDefault();
-    // 프로필 사진 업로드 로직을 구현해주세요.
-  };
-
-  const handleAddressSearch = () => {
+  const openAddressSearch = () => {
     if (!isAddressAPIInitialized) {
       setIsAddressAPIInitialized(true);
       new window.daum.Postcode({
         oncomplete: function (data) {
           const { address } = data;
           setAddress(address);
-
-          // 비동기 방식, 백엔드에서 파일 생성 후 서버 코드를 작성해주세요.
-          axios.post("/api/submitAddress", { address: address });
         },
       }).open();
     }
@@ -262,7 +231,7 @@ const Signup = () => {
 
   useEffect(() => {
     loadDaumAddressAPI().then(() => {
-      document.getElementById("customer-address").onclick = handleAddressSearch;
+      document.getElementById("customer-address").onclick = openAddressSearch;
     });
   }, []);
 
@@ -271,12 +240,12 @@ const Signup = () => {
   };
 
   return (
-    <SignupWrapper>
-      <SignupHeader>
-        <SignupTitle>Create Account</SignupTitle>
-      </SignupHeader>
-      <SignupForm>
-        <form method="post" id="sign-up" onSubmit={handleSubmit}>
+    <ModifyWrapper>
+      <ModifyHeader>
+        <ModifyTitle>Modify Account Information</ModifyTitle>
+      </ModifyHeader>
+      <ModifyForm>
+        <form method="post" id="modify" onSubmit={handleSubmit}>
           <InputTitle htmlFor="firstName">FIRST NAME</InputTitle>
           <InputSpace
             type="text"
@@ -285,6 +254,7 @@ const Signup = () => {
             placeholder="Please enter your first name."
             value={firstName}
             onChange={handleFirstNameChange}
+            disabled
           />
           <InputTitle htmlFor="lastName">LAST NAME</InputTitle>
           <InputSpace
@@ -294,6 +264,7 @@ const Signup = () => {
             placeholder="Please enter your last name."
             value={lastName}
             onChange={handleLastNameChange}
+            disabled
           />
           <InputTitle htmlFor="email">EMAIL</InputTitle>
           <InputSpace
@@ -302,9 +273,8 @@ const Signup = () => {
             id="customer-email"
             placeholder="Please enter your email."
             value={email}
-            onChange={handleEmailChange}
+            disabled
           />
-          {emailError && <ErrorMessage>{emailError}</ErrorMessage>}
           <InputTitle htmlFor="password">PASSWORD</InputTitle>
           <InputSpace
             type="password"
@@ -313,18 +283,10 @@ const Signup = () => {
             placeholder="Please enter your password."
             value={password}
             onChange={handlePasswordChange}
-            maxLength={20}
           />
-          <PasswordInfo isValid={isValidPassword}>
-            {passwordMessage}
-            {"\n"}
-            <PasswordRequirement>
-              * Must include both letters and numbers
-            </PasswordRequirement>
-            {"\n"}
-            <PasswordRequirement>
-              * Must be between 8 and 20 characters long
-            </PasswordRequirement>
+          <PasswordInfo>
+            * Must include both letters and numbers
+            <br />* Must be between 8 and 20 characters long.
           </PasswordInfo>
           <ProfileFormWrapper>
             <InputTitle>Upload Profile Image</InputTitle>
@@ -355,8 +317,7 @@ const Signup = () => {
             id="customer-address"
             placeholder="Please enter your address."
             value={address}
-            onClick={handleAddressSearch}
-            readOnly
+            onClick={openAddressSearch}
           />
           <InputSpace
             type="text"
@@ -387,28 +348,18 @@ const Signup = () => {
             />
             <span style={{ paddingLeft: "8px" }}>Female</span>
           </RadioButtonLabel>
-          <RadioButtonLabel>
-            <input
-              type="radio"
-              name="gender"
-              value="others"
-              checked={gender === "others"}
-              onChange={handleGenderChange}
-            />
-            <span style={{ paddingLeft: "8px" }}>others</span>
-          </RadioButtonLabel>
           {requiredFieldsError && (
             <ErrorMessage>{requiredFieldsError}</ErrorMessage>
           )}
           <FormBtns>
-            <CreateBtn type="submit" value="Create">
-              Create
+            <CreateBtn type="submit" value="Update">
+              Update
             </CreateBtn>
           </FormBtns>
         </form>
-      </SignupForm>
-    </SignupWrapper>
+      </ModifyForm>
+    </ModifyWrapper>
   );
 };
 
-export default Signup;
+export default Modify;

@@ -9,6 +9,7 @@ import Signup from "./pages/Signup";
 import MyPage from "./pages/MyPage";
 import Payment from "./pages/Payment";
 import Upload from "./pages/Upload";
+import Modify from "./pages/Modify";
 
 const router = createBrowserRouter([
   {
@@ -36,6 +37,10 @@ const router = createBrowserRouter([
       {
         path: "/mypage",
         element: <MyPage />,
+      },
+      {
+        path: "/mypage/modify",
+        element: <Modify />,
       },
       {
         path: "/payment",

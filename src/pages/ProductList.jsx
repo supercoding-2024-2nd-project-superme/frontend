@@ -1,56 +1,100 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import ReactDOM from "react-dom";
+import { Link } from "react-router-dom";
 import styled from "styled-components";
+import useFetch from "../hooks/ProductList/useFetch";
+import usePagination from "../hooks/ProductList/usePagination";
+import useRouting from "../hooks/ProductList/useRouting";
+import { ItemCard } from "../components/ProductList/ItemCard";
+import ProductListWithFilter from "../components/ProductList/ProductListWithFilter";
+import CategoryModal from "../components/ProductList/CategoryModal";
 
-// Styled-components
+import Backdrop from "../common/Backdrop";
+
+const Breadcrumbs = styled.div`
+  display: flex;
+  position: relative;
+  top: 110px;
+  right: 490px;
+`;
+
+const StyledLink = styled(Link)`
+  display: block;
+  text-decoration: none;
+  color: black; // 원하는대로 색상 조절
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+const ShowAll = styled.div`
+  display: grid;
+  font-size: 24px;
+`;
+
+const FilterAndCategoryContainer = styled.div`
+  display: flex;
+  justify-content: space-between; // 양쪽에 자동으로 공간을 만들어 줍니다.
+  align-items: center;
+  padding: 20px;
+  margin-bottom: 20px;
+  width: 100%;
+
+  @media (max-width: 768px) {
+    justify-content: space-between; // 작은 화면에서도 양쪽 배치를 유지
+  }
+`;
+
+const CategoryButton = styled.button`
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  border: 1px solid #ccc;
+  background-color: white;
+  cursor: pointer;
+  font-size: 15px;
+  font-family: sans-serif;
+  gap: 8px;
+  margin-bottom: 10px;
+
+  &:hover {
+    background-color: white;
+  }
+`;
+
 const MainContent = styled.div`
-  padding-top: 100px; // 헤더 높이
-  padding-bottom: 100px; // 푸터 높이
-  min-height: calc(100vh - 200px); // 전체 높이에서 헤더와 푸터 높이를 뺀 값
+  padding-top: 100px;
+  padding-bottom: 100px;
+  min-height: calc(100vh - 200px);
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
+
+  @media (max-width: 768px) {
+    padding-top: 20px;
+    padding-bottom: 20px;
+  }
 `;
 
 const Grid = styled.div`
   display: grid;
-  grid-template-columns: repeat(
-    4,
-    minmax(270px, 1fr)
-  ); // 열 너비를 최소 px로 설정하고 1fr의 비율로 채워짐
-  gap: 10px; // 그리드 간격
+  grid-template-columns: repeat(4, minmax(270px, 1fr));
+  gap: 10px;
   padding: 20px;
   justify-content: center;
-`;
 
-const ItemCard = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 10px;
-  cursor: pointer;
-  width: 270px; // 정사각형 모양을 만들기 위해 너비 설정
-  height: 270px; // 정사각형 모양을 만들기 위해 높이 설정
-  margin-bottom: 10px; // 카드 사이의 간격을 주기 위해 마진 설정
-  position: relative; // 이미지를 포함하는 카드를 기준으로 하위 요소를 배치하기 위해
-`;
+  @media (max-width: 1024px) {
+    grid-template-columns: repeat(3, minmax(200px, 1fr));
+  }
 
-const ProductImage = styled.img`
-  width: 100%; // 이미지 너비를 카드에 맞춤
-  height: 100%; // 이미지 높이를 카드에 맞춤
-  object-fit: contain; // 이미지가 완전히 보이도록 가로세로 비율을 유지하면서 컨테이너에 맞게 조정
-  max-height: 70%; // 카드 높이의 70%까지만 이미지가 차지하도록 설정
-`;
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(2, minmax(150px, 1fr));
+  }
 
-const ProductName = styled.h3`
-  font-size: 14px;
-  text-align: center;
-`;
-
-const ProductPrice = styled.p`
-  font-size: 14px;
-  color: #333;
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 const PaginationContainer = styled.div`
@@ -74,7 +118,6 @@ const Button = styled.button`
     background-color: #eaeaea;
   }
 `;
-
 const PageNumber = styled.button`
   margin: 0 5px;
   border: none;
@@ -86,75 +129,86 @@ const PageNumber = styled.button`
 `;
 
 const ProductList = () => {
-  const [products, setProducts] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 20;
-  const navigate = useNavigate(); // useNavigate 훅 사용
+  const { data: products } = useFetch("https://dummyjson.com/products");
+  const { currentData, next, prev, jump, currentPage, maxPage } = usePagination(
+    products,
+    20
+  );
+  const { goToProduct } = useRouting();
 
-  useEffect(() => {
-    fetch("https://dummyjson.com/products")
-      .then((response) => response.json())
-      .then((data) => setProducts(data.products))
-      .catch((error) => console.error("Error fetching data:", error));
-  }, []);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [isCategoryOpen, setIsCategoryOpen] = useState(false);
 
-  const handleProductClick = (id) => {
-    navigate(`/products/${id}`); // 상품 ID를 사용하여 ProductDetail 페이지로 이동
+  const handleFilterChange = (selectedOption) => {
+    let filteredData = [...products]; // 초기화
+    if (selectedOption === "price_low_high") {
+      // 가격 낮은 순으로 정렬
+      filteredData.sort((a, b) => a.price - b.price);
+    } else if (selectedOption === "price_high_low") {
+      // 가격 높은 순으로 정렬
+      filteredData.sort((a, b) => b.price - a.price);
+    }
+    setFilteredProducts(filteredData);
   };
 
-  // 현재 페이지에 표시할 아이템 계산
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = products.slice(indexOfFirstItem, indexOfLastItem);
+  useEffect(() => {
+    // 필터 옵션이 변경될 때마다 필터링된 결과를 업데이트
+    setFilteredProducts([]);
+  }, [products]);
 
-  // 페이지 번호를 렌더링하기 위한 컴포넌트
-  const PageNumbers = () => {
-    const pageNumbers = [];
-    const totalPages = Math.ceil(products.length / itemsPerPage);
-
-    for (let i = 1; i <= totalPages; i++) {
-      pageNumbers.push(i);
+  const handleModal = () => {
+    if (isCategoryOpen) {
+      setIsCategoryOpen(false);
     }
-
-    return (
-      <PaginationContainer>
-        <Button
-          onClick={() => setCurrentPage(currentPage - 1)}
-          disabled={currentPage === 1} // 첫 페이지에서는 버튼 비활성화
-        >
-          이전
-        </Button>
-        {pageNumbers.map((number) => (
-          <PageNumber key={number} onClick={() => setCurrentPage(number)}>
-            {number}
-          </PageNumber>
-        ))}
-        <Button
-          onClick={() => setCurrentPage(currentPage + 1)}
-          disabled={currentPage === totalPages} // 마지막 페이지에서는 버튼 비활성화
-        >
-          다음
-        </Button>
-      </PaginationContainer>
-    );
   };
 
   return (
-    <MainContent>
-      <Grid>
-        {currentItems.map((product) => (
-          <ItemCard
-            key={product.id}
-            onClick={() => handleProductClick(product.id)}
-          >
-            <ProductImage src={product.thumbnail} alt={product.title} />
-            <ProductName>{product.title}</ProductName>
-            <ProductPrice>${product.price}</ProductPrice>
-          </ItemCard>
-        ))}
-      </Grid>
-      <PageNumbers />
-    </MainContent>
+    <>
+      <Breadcrumbs>
+        <StyledLink to="/">Home</StyledLink>/SHOP ALL
+      </Breadcrumbs>
+      <MainContent>
+        <ShowAll>SHOP All</ShowAll>
+        <FilterAndCategoryContainer>
+          <CategoryButton onClick={() => setIsCategoryOpen(true)}>
+            Category
+          </CategoryButton>
+          <ProductListWithFilter onFilterChange={handleFilterChange} />
+        </FilterAndCategoryContainer>
+        <Grid>
+          {(filteredProducts.length > 0 ? filteredProducts : currentData()).map(
+            (product) => (
+              <ItemCard
+                key={product.id}
+                id={product.id}
+                images={product.images}
+                title={product.title}
+                price={product.price}
+                onClick={goToProduct}
+              />
+            )
+          )}
+        </Grid>
+        <PaginationContainer>
+          <Button onClick={prev} disabled={currentPage === 1}>
+            Prev
+          </Button>
+          {Array.from({ length: maxPage }, (_, i) => (
+            <PageNumber key={i + 1} onClick={() => jump(i + 1)}>
+              {i + 1}
+            </PageNumber>
+          ))}
+          <Button onClick={next} disabled={currentPage === maxPage}>
+            Next
+          </Button>
+        </PaginationContainer>
+      </MainContent>
+      {ReactDOM.createPortal(
+        <Backdrop isModalOpen={isCategoryOpen} handleModal={handleModal} />,
+        document.getElementById("backdrop")
+      )}
+      <CategoryModal isModalOpen={isCategoryOpen} handleModal={handleModal} />
+    </>
   );
 };
 

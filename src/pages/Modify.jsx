@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import { loadDaumAddressAPI } from "../common/DaumAddressApi";
+import axios from "axios";
+import { SHA256 } from "crypto-js";
 
 const ModifyWrapper = styled.div`
   padding-top: 60px;
@@ -8,6 +10,7 @@ const ModifyWrapper = styled.div`
   min-width: 700px;
   height: 700px;
   overflow: auto;
+  margin-top: 90px;
 `;
 
 const ModifyHeader = styled.div`
@@ -76,11 +79,17 @@ const ErrorMessage = styled.div`
 `;
 
 const PasswordInfo = styled.div`
-  color: gray; /* 변경: 비밀번호 정보 스타일 변경 */
+  color: ${({ isValid }) => (isValid ? "green" : "red")};
   font-size: 14px;
   margin-top: -20px;
   padding-bottom: 20px;
   white-space: pre-line;
+`;
+
+const PasswordRequirement = styled.span`
+  font-size: 14px;
+  white-space: pre-line;
+  color: black;
 `;
 
 const RadioButtonLabel = styled.label`
@@ -128,6 +137,8 @@ const Modify = () => {
   const [addressDetail, setAddressDetail] = useState("");
   const [requiredFieldsError, setRequiredFieldsError] = useState("");
   const [isAddressAPIInitialized, setIsAddressAPIInitialized] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState("");
+  const [isValidPassword, setIsValidPassword] = useState(true);
 
   const handleFirstNameChange = (event) => {
     setFirstName(event.target.value);
@@ -187,17 +198,52 @@ const Modify = () => {
         "This email is already in use. Please use a different email."
       );
     }
-  };
 
+    const token = localStorage.getItem("token");
+
+    const config = {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    };
+
+    axios
+      .put(
+        "/api/user",
+        {
+          firstName,
+          lastName,
+          email,
+          password,
+          gender,
+          phoneNumber,
+          address: `${address} ${addressDetail}`,
+        },
+        config
+      )
+      .then((response) => {
+        // 회원 정보 수정 성공 처리
+      })
+      .catch((error) => {
+        // 회원 정보 수정 실패 처리
+      });
+  };
   const handlePasswordChange = (event) => {
     const newPassword = event.target.value;
     setPassword(newPassword);
 
+    // 해시화 함수
+    const hashedPassword = SHA256(newPassword).toString();
+
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,20}$/;
     if (!passwordRegex.test(newPassword)) {
-      setPasswordError("Your password does not meet the required conditions.");
+      setPasswordMessage(
+        "Your password does not meet the required conditions."
+      );
+      setIsValidPassword(false);
     } else {
-      setPasswordError("");
+      setPasswordMessage("Your password meets the required conditions.");
+      setIsValidPassword(true);
     }
   };
 
@@ -284,9 +330,16 @@ const Modify = () => {
             value={password}
             onChange={handlePasswordChange}
           />
-          <PasswordInfo>
-            * Must include both letters and numbers
-            <br />* Must be between 8 and 20 characters long.
+          <PasswordInfo isValid={isValidPassword}>
+            {passwordMessage}
+            {"\n"}
+            <PasswordRequirement>
+              * Must include both letters and numbers
+            </PasswordRequirement>
+            {"\n"}
+            <PasswordRequirement>
+              * Must be between 8 and 20 characters long
+            </PasswordRequirement>
           </PasswordInfo>
           <ProfileFormWrapper>
             <InputTitle>Upload Profile Image</InputTitle>

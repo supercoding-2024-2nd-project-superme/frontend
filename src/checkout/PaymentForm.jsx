@@ -222,7 +222,7 @@ const Layout = styled.div`
   justify-content: center;
   align-items: center;
   margin: 100px 0 100px 0;
-  width: 80vw;
+  width: 100%;
 `;
 
 const PaymentWrapper = styled.div`

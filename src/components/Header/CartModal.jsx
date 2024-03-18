@@ -121,7 +121,7 @@ const SubTotalWrapper = styled.div`
   white-space: nowrap;
 `;
 
-const ExtraCostDesc = styled.text`
+const ExtraCostDesc = styled.div`
   width: 450px;
   margin: 8px 0 8px 0;
   font-size: 1rem;

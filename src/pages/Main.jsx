@@ -13,18 +13,16 @@ const MainContainer = styled.div`
 
 const SliderWrapper = styled.div`
   width: 100%;
+  height: 100%;
   margin: 0 auto;
   text-align: center;
-  height: 700px;
   overflow: hidden;
-  overflow-y: hidden; /* 세로 스크롤 숨김 */
   position: relative;
 `;
 
 const SlideImage = styled.img`
-  width: 100%;
-  max-height: 100%; /* 이미지의 최대 높이 설정 */
-  object-fit: contain;
+  width: 100vw;
+  height: 100vh;
 `;
 
 const SliderText = styled.p`

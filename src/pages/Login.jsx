@@ -1,5 +1,93 @@
 import React, { useEffect, useState } from "react";
 import styled from "styled-components";
+import axios from "axios";
+
+const LoginWrapper = styled.div`
+  padding-top: 60px;
+  padding-bottom: 20px;
+  width: 400px;
+  height: 700px;
+  margin-top: 90px;
+`;
+
+const LoginHeader = styled.div`
+  margin-bottom: 50px;
+  letter-spacing: 1.5px;
+`;
+
+const LoginTitle = styled.h1`
+  text-align: center;
+  font-weight: 400;
+`;
+
+const LoginForm = styled.div`
+  margin-bottom: 20px;
+`;
+
+const InputTitle = styled.label`
+  cursor: pointer;
+  display: block;
+  margin-bottom: 15px;
+  letter-spacing: 2px;
+  font-size: 12px;
+`;
+
+const InputSpace = styled.input`
+  display: block;
+  margin-bottom: 30px;
+  width: 100%;
+  background-color: transparent;
+  color: inherit;
+  border: 1px solid #e8e8e1;
+  max-width: 100%;
+  padding: 10px 10px;
+  box-sizing: border-box;
+`;
+
+const AccountBtn = styled.input`
+  display: inline-block;
+  margin-bottom: 30px;
+  cursor: pointer;
+  width: 100%;
+  padding: 10px 20px;
+  font-size: 18px;
+  background-image: none;
+  transition: opacity 1s;
+  line-height: 1.42;
+  letter-spacing: 1.5px;
+  text-decoration: none;
+  text-align: center;
+  vertical-align: middle;
+  border: 1px solid transparent;
+  background-color: #111111;
+  color: #fff;
+`;
+
+const LoginGrid = styled.div`
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  margin-left: 0;
+`;
+
+const GridItem = styled.div`
+  float: left;
+  min-height: 1px;
+  width: 50%;
+`;
+
+const LabelInfo = styled.small`
+  display: block;
+  margin-bottom: 10px;
+`;
+
+const FormBtns = styled.p`
+  margin: 0 0 20px 0;
+`;
+
+const CreateAccount = styled.a`
+  font-size: 14px;
+`;
 
 const Login = () => {
   const [userEmail, setUserEmail] = useState("");
@@ -9,14 +97,15 @@ const Login = () => {
 
   useEffect(() => {
     if (attemptLogin) {
-      // 후에 로그인 시도가 있으면 로그인 로직을 구현해주세요.(윤승현)
-      // 아래 코드는 항상 실패로 가정하는 코드입니다.
-      const loginSuccess = false;
+      // 로그인 시도가 있을 때만 실행되는 로직
+      const loginSuccess = false; // 로그인 실패를 가정
 
       if (!loginSuccess) {
         setErrorMessage("Invalid email or password. Please try again.");
       } else {
         setErrorMessage("");
+
+        localStorage.setItem("token", "your_jwt_token_here");
       }
 
       setAttemptLogin(false);
@@ -27,92 +116,6 @@ const Login = () => {
     event.preventDefault();
     setAttemptLogin(true);
   };
-
-  const LoginWrapper = styled.div`
-    padding-top: 60px;
-    padding-bottom: 20px;
-    width: 400px;
-    height: 700px;
-  `;
-
-  const LoginHeader = styled.div`
-    margin-bottom: 50px;
-    letter-spacing: 1.5px;
-  `;
-
-  const LoginTitle = styled.h1`
-    text-align: center;
-    font-weight: 400;
-  `;
-
-  const LoginForm = styled.div`
-    margin-bottom: 20px;
-  `;
-
-  const InputTitle = styled.label`
-    cursor: pointer;
-    display: block;
-    margin-bottom: 15px;
-    letter-spacing: 2px;
-    font-size: 12px;
-  `;
-
-  const InputSpace = styled.input`
-    display: block;
-    margin-bottom: 30px;
-    width: 100%;
-    background-color: transparent;
-    color: inherit;
-    border: 1px solid #e8e8e1;
-    max-width: 100%;
-    padding: 10px 10px;
-    box-sizing: border-box;
-  `;
-
-  const AccountBtn = styled.input`
-    display: inline-block;
-    margin-bottom: 30px;
-    cursor: pointer;
-    width: 100%;
-    padding: 10px 20px;
-    font-size: 18px;
-    background-image: none;
-    transition: opacity 1s;
-    line-height: 1.42;
-    letter-spacing: 1.5px;
-    text-decoration: none;
-    text-align: center;
-    vertical-align: middle;
-    border: 1px solid transparent;
-    background-color: #111111;
-    color: #fff;
-  `;
-
-  const LoginGrid = styled.div`
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    margin-left: 0;
-  `;
-
-  const GridItem = styled.div`
-    float: left;
-    min-height: 1px;
-    width: 50%;
-  `;
-
-  const LabelInfo = styled.small`
-    display: block;
-    margin-bottom: 10px;
-  `;
-
-  const FormBtns = styled.p`
-    margin: 0 0 20px 0;
-  `;
-
-  const CreateAccount = styled.a`
-    font-size: 14px;
-  `;
 
   return (
     <LoginWrapper>

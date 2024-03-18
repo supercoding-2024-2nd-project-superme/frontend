@@ -8,7 +8,6 @@ import useRouting from "../hooks/ProductList/useRouting";
 import { ItemCard } from "../components/ProductList/ItemCard";
 import ProductListWithFilter from "../components/ProductList/ProductListWithFilter";
 import CategoryModal from "../components/ProductList/CategoryModal";
-
 import Backdrop from "../common/Backdrop";
 
 const Breadcrumbs = styled.div`

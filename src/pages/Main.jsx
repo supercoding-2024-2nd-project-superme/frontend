@@ -3,10 +3,12 @@ import Slider from "react-slick";
 import styled from "styled-components";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+import ProductList from "./ProductList";
 
 const MainContainer = styled.div`
   width: 100%;
   overflow: hidden;
+  margin-top: 90px;
 `;
 
 const SliderWrapper = styled.div`
@@ -41,8 +43,6 @@ const Main = () => {
   const images = [
     "https://danton.com/cdn/shop/files/PC-WOMEN_de00abda-ed74-44ad-9210-f51c04a45d17_2808x.jpg?v=1710133780",
     "https://danton.com/cdn/shop/files/20240207-pc-men_2808x.jpg?v=1707290428",
-    "https://danton.com/cdn/shop/files/danton_0732_2808x.jpg?v=1642654570",
-    "https://danton.com/cdn/shop/files/2_2808x.jpg?v=1642668019",
   ];
 
   const settings = {
@@ -67,6 +67,7 @@ const Main = () => {
         </Slider>
         <SliderText>SPRING & SUMMER</SliderText>
       </SliderWrapper>
+      <ProductList />
     </MainContainer>
   );
 };

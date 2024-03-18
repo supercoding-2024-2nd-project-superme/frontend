@@ -7,6 +7,7 @@ const AppContainer = styled.div`
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  margin-top: 90px;
 `;
 
 const MyPageWrapper = styled.div`

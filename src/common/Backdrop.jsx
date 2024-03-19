@@ -22,7 +22,3 @@ export default function Backdrop({ isModalOpen, handleModal }) {
 
   return <ModalBackdrop $isModalOpen={isModalOpen} onClick={handleModal} />;
 }
-
-
-
-

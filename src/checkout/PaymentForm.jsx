@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { styled } from "styled-components";
 import Paypal from "./Paypal";
+import CheckoutItems from "./CheckoutItems";
 
 const PaymentForm = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -117,95 +118,99 @@ const PaymentForm = () => {
 
   return (
     <Layout>
-      <PaypalWrapper>
-        <div>Express Checkout</div>
-        <Paypal />
-      </PaypalWrapper>
+      <PaymentWrapper>
+        <PaypalWrapper>
+          <div>Express Checkout</div>
+          <Paypal />
+        </PaypalWrapper>
 
-      <Form onSubmit={buttonSubmitHandler}>
-        <ContactWrapper>
-          {isLoggedIn ? (
-            <MemberContactWrapper>
-              <p>account</p>
-              {/* 이메일주소 데이터 받아서 넣아야함 */}
-              <p>로그인 되어 있습니다. 사용자 이메일주소</p>
-            </MemberContactWrapper>
-          ) : (
-            <GuestContactWrapper>
-              <label>Contact</label>
+        <Form onSubmit={buttonSubmitHandler}>
+          <ContactWrapper>
+            {isLoggedIn ? (
+              <MemberContactWrapper>
+                <p>account</p>
+                {/* 이메일주소 데이터 받아서 넣아야함 */}
+                <p>로그인 되어 있습니다. 사용자 이메일주소</p>
+              </MemberContactWrapper>
+            ) : (
+              <GuestContactWrapper>
+                <label>Contact</label>
+                <input
+                  value={objectState.email}
+                  placeholder="Email"
+                  onChange={inputEmailHandler}
+                />
+              </GuestContactWrapper>
+            )}
+          </ContactWrapper>
+          <DeliveryWrapper>
+            <label>Delivery</label>
+            <input
+              value={objectState.name}
+              placeholder="Name"
+              onChange={inputNameHandler}
+            />
+
+            <input
+              value={objectState.phone}
+              placeholder="Phone number"
+              onChange={inputPhoneHandler}
+            />
+
+            <input
+              value={objectState.postCode}
+              placeholder="Post code"
+              onChange={inputPostCodeHandler}
+            />
+
+            <input
+              value={objectState.address}
+              placeholder="Address"
+              onChange={inputAddressHandler}
+            />
+
+            <input
+              value={objectState.addressDetail}
+              placeholder="Address detail"
+              onChange={inputAddressDetailHandler}
+            />
+          </DeliveryWrapper>
+          <PaymentWrapper>
+            <div>Deposit Balance: ${balance}</div>
+
+            <label>Payment</label>
+            <input
+              value={objectState.cardNumber}
+              placeholder="Card number"
+              onChange={inputCardNumberHandler}
+            />
+            <CardDetailWrapper>
               <input
-                value={objectState.email}
-                placeholder="Email"
-                onChange={inputEmailHandler}
+                value={objectState.expDate}
+                placeholder="Expiration date (MM/YY)"
+                onChange={inputExpDateHandler}
               />
-            </GuestContactWrapper>
-          )}
-        </ContactWrapper>
-        <DeliveryWrapper>
-          <label>Delivery</label>
-          <input
-            value={objectState.name}
-            placeholder="Name"
-            onChange={inputNameHandler}
-          />
 
-          <input
-            value={objectState.phone}
-            placeholder="Phone number"
-            onChange={inputPhoneHandler}
-          />
-
-          <input
-            value={objectState.postCode}
-            placeholder="Post code"
-            onChange={inputPostCodeHandler}
-          />
-
-          <input
-            value={objectState.address}
-            placeholder="Address"
-            onChange={inputAddressHandler}
-          />
-
-          <input
-            value={objectState.addressDetail}
-            placeholder="Address detail"
-            onChange={inputAddressDetailHandler}
-          />
-        </DeliveryWrapper>
-        <PaymentWrapper>
-          <div>Deposit Balance: ${balance}</div>
-
-          <label>Payment</label>
-          <input
-            value={objectState.cardNumber}
-            placeholder="Card number"
-            onChange={inputCardNumberHandler}
-          />
-          <CardDetailWrapper>
-            <input
-              value={objectState.expDate}
-              placeholder="Expiration date (MM/YY)"
-              onChange={inputExpDateHandler}
-            />
+              <input
+                value={objectState.securityCode}
+                placeholder="Security code"
+                onChange={inputSecurityCodeHandler}
+              />
+            </CardDetailWrapper>
 
             <input
-              value={objectState.securityCode}
-              placeholder="Security code"
-              onChange={inputSecurityCodeHandler}
+              value={objectState.nameOnCard}
+              placeholder="Name on card"
+              onChange={inputNameOnCardHandler}
             />
-          </CardDetailWrapper>
+          </PaymentWrapper>
+          <PayBtnWrapper>
+            <button type="submit">Pay now</button>
+          </PayBtnWrapper>
+        </Form>
+      </PaymentWrapper>
 
-          <input
-            value={objectState.nameOnCard}
-            placeholder="Name on card"
-            onChange={inputNameOnCardHandler}
-          />
-        </PaymentWrapper>
-        <PayBtnWrapper>
-          <button type="submit">Pay now</button>
-        </PayBtnWrapper>
-      </Form>
+      <CheckoutItems />
     </Layout>
   );
 };
@@ -214,9 +219,22 @@ export default PaymentForm;
 
 const Layout = styled.div`
   display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 100px 0 100px 0;
+  width: 80vw;
+`;
+
+const PaymentWrapper = styled.div`
+  display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  width: auto;
+  border-right: 1px solid grey;
+  input {
+    width: 100%;
+  }
 `;
 
 const PaypalWrapper = styled.div`
@@ -224,11 +242,10 @@ const PaypalWrapper = styled.div`
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  width: 100%;
 `;
 
 const Form = styled.form`
-  width: 40%;
+  width: 100%;
 `;
 
 const ContactWrapper = styled.div`
@@ -262,17 +279,6 @@ const GuestContactWrapper = styled.div`
 `;
 
 const DeliveryWrapper = styled.div`
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  width: auto;
-  input {
-    width: 100%;
-  }
-`;
-
-const PaymentWrapper = styled.div`
   display: flex;
   flex-direction: column;
   justify-content: center;

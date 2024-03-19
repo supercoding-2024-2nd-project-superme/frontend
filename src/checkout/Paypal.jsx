@@ -31,6 +31,7 @@ const Paypal = () => {
       })
       .render(paypal.current);
   }, []);
+
   return (
     <>
       <div ref={paypal}></div>

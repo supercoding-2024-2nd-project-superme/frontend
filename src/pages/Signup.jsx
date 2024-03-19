@@ -7,9 +7,10 @@ import { SHA256 } from "crypto-js";
 const SignupWrapper = styled.div`
   padding-top: 60px;
   padding-bottom: 60px;
-  min-width: 700px;
-  height: 700px;
-  overflow: auto;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  margin-top: 90px;
 `;
 
 const SignupHeader = styled.div`
@@ -202,9 +203,41 @@ const Signup = () => {
       setEmailError(
         "This email is already in use. Please use a different email."
       );
+      return;
     }
-  };
 
+    // JWT 요청
+    axios
+      .post("/api/authenticate", { email, password })
+      .then((response) => {
+        const { token } = response.data;
+        // 토큰을 쿠키에 저장.
+        localStorage.setItem("token", token);
+        // 토큰을 전송.
+        axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+        // 백엔드로 전송.
+        axios
+          .post("/api/signup", {
+            firstName,
+            lastName,
+            email,
+            password: hashedPassword,
+            gender,
+            phoneNumber,
+            address: fullAddress,
+          })
+          .then((response) => {
+            // 회원가입 성공 처리
+          })
+          .catch((error) => {
+            // 회원가입 실패 처리
+          });
+      })
+      .catch((error) => {
+        // 인증 오류 처리
+      });
+  };
   const handlePasswordChange = (event) => {
     const newPassword = event.target.value;
     setPassword(newPassword);

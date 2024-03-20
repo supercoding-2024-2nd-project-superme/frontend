@@ -3,7 +3,7 @@ import styled from "styled-components";
 import RegistImage from "../components/ProductRegistration/RegistImage";
 import RegistInfo from "../components/ProductRegistration/RegistInfo";
 
-const Layout = styled.div`
+const Layout = styled.form`
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -33,6 +33,19 @@ const RegistWrapper = styled.div`
   }
 `;
 
+const SubmitBtn = styled.button`
+  margin-top: 50px;
+  padding: 0.8rem 3rem;
+  background-color: var(--color-black);
+  color: var(--color-white);
+  border-radius: 5px;
+  transition: all 0.5s;
+  cursor: pointer;
+  &:hover {
+    transform: scale(1.1);
+  }
+`;
+
 export default function Registration() {
   const [form, setForm] = useState({
     categoryName: "Select Category",
@@ -41,8 +54,6 @@ export default function Registration() {
     description: "",
     itemStocks: [initItemStocks],
   });
-
-  console.log(form);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -83,8 +94,22 @@ export default function Registration() {
     }
   };
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const data = await fetch("url", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(form),
+    }).then((res) => res.json());
+
+    console.log(data);
+  };
+
   return (
-    <Layout>
+    <Layout onSubmit={handleSubmit}>
       <RegistTitle>Home / Add Products</RegistTitle>
       <RegistWrapper>
         <RegistImage />
@@ -97,6 +122,7 @@ export default function Registration() {
           handlePrice={handlePrice}
         />
       </RegistWrapper>
+      <SubmitBtn>Add Product</SubmitBtn>
     </Layout>
   );
 }

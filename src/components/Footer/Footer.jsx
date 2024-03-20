@@ -9,9 +9,12 @@ const Layout = styled.footer`
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: 560px;
+  min-height: 560px;
   padding: 5rem;
   background-color: rgba(240, 241, 243, 1);
+  @media screen and (max-width: 600px) {
+    padding: 2rem 0;
+  }
 `;
 
 const Box = styled.div`
@@ -25,12 +28,20 @@ const Box = styled.div`
 const Menus = styled.div`
   display: flex;
   gap: 160px;
+  @media screen and (max-width: 600px) {
+    flex-direction: column;
+    gap: 2rem;
+  }
 `;
 
 const List = styled.ul`
   display: flex;
   flex-direction: column;
   gap: 0.8rem;
+  @media screen and (max-width: 600px) {
+    border-bottom: 1px solid rgba(214, 215, 216, 1);
+    padding-bottom: 2rem;
+  }
 `;
 
 const Item = styled.li`
@@ -44,9 +55,11 @@ const Subscribe = styled.div`
 
 const SubscribeTitle = styled.p`
   letter-spacing: 2px;
+  white-space: nowrap;
 `;
 
 const SubscribeDetail = styled.p`
+  min-width: 150px;
   margin-top: 1.2rem;
   line-height: 1.2rem;
 `;
@@ -55,6 +68,7 @@ const Email = styled.div`
   display: flex;
   align-items: center;
   width: 90%;
+  min-width: 200px;
   background-color: transparent;
   border: ${(props) =>
     props.$isClicked ? "2px solid var(--color-black)" : "1px solid rgba(214, 216, 217, 1)"};
@@ -123,7 +137,9 @@ export default function Footer() {
             onClick={() => setIsEmailClick(true)}
             onBlur={() => setIsEmailClick(false)}
           >
-            <EmailIcon />
+            <div>
+              <EmailIcon />
+            </div>
             <EmailInput type="text" />
           </Email>
         </Subscribe>

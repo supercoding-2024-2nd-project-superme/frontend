@@ -4,14 +4,11 @@ import styled from "styled-components";
 import Paypal from "../../checkout/Paypal";
 import { v4 as uuid4 } from "uuid";
 import { useDispatch, useSelector } from "react-redux";
-import selectedQuantity, {
-  decrement,
-  increment,
-} from "../../store/modules/selectedQuantity";
+import selectedQuantity, { decrement, increment } from "../../store/modules/selectedQuantity";
 
 const Layout = styled.div`
   position: fixed;
-  right: ${(props) => (props.$isModalOpen ? "0" : "-100%")};
+  right: ${(props) => (props.$isModalOpen ? "0" : "-200%")};
   opacity: ${(props) => (props.$isModalOpen ? "1" : "0")};
   top: 0;
   width: 550px;
@@ -121,7 +118,7 @@ const SubTotalWrapper = styled.div`
   white-space: nowrap;
 `;
 
-const ExtraCostDesc = styled.text`
+const ExtraCostDesc = styled.div`
   width: 450px;
   margin: 8px 0 8px 0;
   font-size: 1rem;
@@ -150,9 +147,7 @@ const CartOverlay = ({ isModalOpen, handleModal }) => {
   //컴포넌트에서 Action을 Dispatch
   const dispatch = useDispatch();
 
-  const SelectedQuantity = useSelector(
-    (state) => state.selectedQuantity.number
-  );
+  const SelectedQuantity = useSelector((state) => state.selectedQuantity.number);
 
   const [totalAmount, setTotalAmount] = useState(0);
   //임시데이터
@@ -160,8 +155,7 @@ const CartOverlay = ({ isModalOpen, handleModal }) => {
     {
       id: "user1",
       item_id: "4536662830136",
-      main_img:
-        "https://danton.com/cdn/shop/files/DNB241L103-0012_10_1800x1800.jpg?v=1708062882",
+      main_img: "https://danton.com/cdn/shop/files/DNB241L103-0012_10_1800x1800.jpg?v=1708062882",
       item_name: "【STORE EXCLUSIVE】WOMEN'S SWEAT SHIRTS",
       ordered_qty: 1,
       orderd_color: "BLUE",
@@ -209,16 +203,9 @@ const CartOverlay = ({ isModalOpen, handleModal }) => {
 
   //장바구니 총 금액 업데이트
   useEffect(() => {
-    const eachItemTotalAmountArr = cartItems.map(
-      (item) => selectedQuantity * item.price
-    );
+    const eachItemTotalAmountArr = cartItems.map((item) => selectedQuantity * item.price);
 
-    setTotalAmount(
-      eachItemTotalAmountArr.reduce(
-        (total, amoutPerItem) => total + amoutPerItem,
-        0
-      )
-    );
+    setTotalAmount(eachItemTotalAmountArr.reduce((total, amoutPerItem) => total + amoutPerItem, 0));
   }, [cartItems]);
 
   //수량 감소
@@ -262,12 +249,7 @@ const CartOverlay = ({ isModalOpen, handleModal }) => {
       <ItemList>
         {cartItems.map((item) => (
           <BoxItem key={uuid4()}>
-            <img
-              src={item.main_img}
-              width="130px"
-              height="130px"
-              style={{ objectFit: "cover" }}
-            />
+            <img src={item.main_img} width="130px" height="130px" style={{ objectFit: "cover" }} />
             <Description>
               <Text>{item.item_name}</Text>
               <TextSize>
@@ -276,13 +258,9 @@ const CartOverlay = ({ isModalOpen, handleModal }) => {
 
               <BtnPriceWrapper>
                 <ButtonBox>
-                  <QtyControlBtn onClick={() => dispatch(decrement())}>
-                    -
-                  </QtyControlBtn>
+                  <QtyControlBtn onClick={() => dispatch(decrement())}>-</QtyControlBtn>
                   {SelectedQuantity}
-                  <QtyControlBtn onClick={() => dispatch(increment())}>
-                    +
-                  </QtyControlBtn>
+                  <QtyControlBtn onClick={() => dispatch(increment())}>+</QtyControlBtn>
                 </ButtonBox>
                 <Text>${item.price}</Text>
               </BtnPriceWrapper>
@@ -295,9 +273,7 @@ const CartOverlay = ({ isModalOpen, handleModal }) => {
           <div>SUBTOTAL</div>
           <div>${totalAmount}</div>
         </SubTotalWrapper>
-        <ExtraCostDesc>
-          Shipping, taxes, and discount codes calculated at checkout.
-        </ExtraCostDesc>
+        <ExtraCostDesc>Shipping, taxes, and discount codes calculated at checkout.</ExtraCostDesc>
         <BtnCheckout>Check Out</BtnCheckout>
         <PaypalWrapper>
           <Paypal />

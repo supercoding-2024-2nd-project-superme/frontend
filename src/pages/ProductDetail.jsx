@@ -62,9 +62,7 @@ const ProductDetail = () => {
           // 스크롤을 상단으로 이동시킵니다.
           window.scrollTo(0, 0);
         })
-        .catch((error) =>
-          console.error("Error fetching product details:", error)
-        );
+        .catch((error) => console.error("Error fetching product details:", error));
     }
   }, [id]);
 
@@ -75,8 +73,8 @@ const ProductDetail = () => {
   return (
     <>
       <Breadcrumbs>
-        <StyledLink to="/">Home</StyledLink>/
-        <ListLink to="/productlist">SHOP ALL</ListLink> / {product.title}
+        <StyledLink to="/">Home</StyledLink>/<ListLink to="/productlist">SHOP ALL</ListLink> /{" "}
+        {product.title}
       </Breadcrumbs>
       <ProductDetailLayout>
         <ProductImageGallery images={product.images[0]} title={product.title} />

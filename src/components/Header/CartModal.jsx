@@ -8,7 +8,7 @@ import selectedQuantity, { decrement, increment } from "../../store/modules/sele
 
 const Layout = styled.div`
   position: fixed;
-  right: ${(props) => (props.$isModalOpen ? "0" : "-100%")};
+  right: ${(props) => (props.$isModalOpen ? "0" : "-200%")};
   opacity: ${(props) => (props.$isModalOpen ? "1" : "0")};
   top: 0;
   width: 550px;

@@ -31,12 +31,20 @@ const SlideImg = styled.img`
 `;
 
 const SubSlider = styled.div`
-  img {
-    padding: 10px;
+  position: relative;
+  width: 90%;
+  margin: auto;
+  button {
+    top: 45%;
+  }
+  button:before {
+    color: black;
   }
 `;
 
 const SlideImgSub = styled.img`
+  padding: 10px;
+  border: ${(props) => (props.$border ? "1px solid var(--color-black)" : "none")};
   cursor: pointer;
 `;
 
@@ -73,7 +81,6 @@ const ImgUploadBtn = styled.label`
   font-weight: bold;
   color: var(--color-black);
   border: 3px solid var(--color-lightgray);
-  margin-top: 20px;
   transition: all 0.5s;
   cursor: pointer;
   &:hover {
@@ -82,10 +89,19 @@ const ImgUploadBtn = styled.label`
   }
 `;
 
-export default function RegistImage() {
+export default function RegistImage({ handleFiles }) {
   const [imgSize, setImgSize] = useState(0);
   const [imgs, setImgs] = useState([]);
+  const [imgIdx, setImgIdx] = useState(0);
   const imgRef = useRef(null);
+  const sliderMain = useRef(null);
+  const sliderSub = useRef(null);
+
+  const handleMainChange = (idx) => {
+    setImgIdx(idx);
+    sliderSub.current.slickGoTo(idx);
+    sliderMain.current.slickGoTo(idx);
+  };
 
   const settings = {
     infinite: false,
@@ -93,12 +109,13 @@ export default function RegistImage() {
     slidesToScroll: 1,
     speed: 500,
     arrows: false,
+    afterChange: handleMainChange,
   };
 
   const settingsSub = {
     infinite: false,
     slidesToShow: 6,
-    slidesToScroll: 1,
+    slidesToScroll: 3,
     speed: 500,
     draggable: false,
   };
@@ -106,8 +123,10 @@ export default function RegistImage() {
   // 이미지 미리보기
   const handleFile = (e) => {
     const files = e.target.files;
+
     if (files) {
       Array.from(files).forEach((file) => {
+        handleFiles(file);
         const reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = () => {
@@ -140,15 +159,21 @@ export default function RegistImage() {
       <ImgPreviewWrapper $imgSize={imgSize}>
         {imgs.length > 0 ? (
           <>
-            <Slider {...settings}>
-              {imgs.map((img) => (
+            <Slider {...settings} ref={sliderMain}>
+              {imgs.map((img, index) => (
                 <SlideImg src={img} key={uuid4()} alt="mainImg" $imgSize={imgSize} />
               ))}
             </Slider>
             <SubSlider>
-              <Slider {...settingsSub}>
-                {imgs.map((img) => (
-                  <SlideImgSub src={img} key={uuid4()} alt="mainImg" $imgSize={imgSize} />
+              <Slider {...settingsSub} ref={sliderSub}>
+                {imgs.map((img, index) => (
+                  <SlideImgSub
+                    src={img}
+                    key={uuid4()}
+                    alt="mainImg"
+                    $border={imgIdx === index}
+                    onClick={() => handleMainChange(index)}
+                  />
                 ))}
               </Slider>
             </SubSlider>

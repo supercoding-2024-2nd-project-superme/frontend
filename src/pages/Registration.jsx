@@ -54,6 +54,11 @@ export default function Registration() {
     description: "",
     itemStocks: [initItemStocks],
   });
+  const [files, setFiles] = useState([]);
+
+  const handleFiles = (files) => {
+    setFiles((prev) => [...prev, files]);
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -97,13 +102,20 @@ export default function Registration() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const data = await fetch("url", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(form),
-    }).then((res) => res.json());
+    const formData = new FormData();
+    formData.append("files", files);
+    formData.append("product", form);
+
+    const data = await fetch(
+      "http://ec2-52-79-241-164.ap-northeast-2.compute.amazonaws.com:8080/api/sales/items",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: formData,
+      }
+    ).then((res) => res.json());
 
     console.log(data);
   };
@@ -112,7 +124,7 @@ export default function Registration() {
     <Layout onSubmit={handleSubmit}>
       <RegistTitle>Home / Add Products</RegistTitle>
       <RegistWrapper>
-        <RegistImage />
+        <RegistImage handleFiles={handleFiles} />
         <RegistInfo
           form={form}
           handleChange={handleChange}

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from "react";
+import styled from "styled-components";
 
 const Paypal = () => {
   const paypal = useRef();
@@ -24,6 +25,10 @@ const Paypal = () => {
         onApprove: async (data, actions) => {
           const order = await actions.order.capture();
           console.log(order);
+          //결제성공시 얼럿
+          if (order.status === "COMPLETED") {
+            alert("결제가 완료되었습니다.");
+          }
         },
         onError: (err) => {
           console.log(err);

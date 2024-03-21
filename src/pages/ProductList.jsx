@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import styled from "styled-components";
 import useFetch from "../hooks/ProductList/useFetch";
 import usePagination from "../hooks/ProductList/usePagination";
@@ -8,13 +8,29 @@ import useRouting from "../hooks/ProductList/useRouting";
 import { ItemCard } from "../components/ProductList/ItemCard";
 import ProductListWithFilter from "../components/ProductList/ProductListWithFilter";
 import CategoryModal from "../components/ProductList/CategoryModal";
+import { TbAdjustmentsHorizontal } from "react-icons/tb";
 import Backdrop from "../common/Backdrop";
+import { SlArrowLeft } from "react-icons/sl";
+import { SlArrowRight } from "react-icons/sl";
 
 const Breadcrumbs = styled.div`
   display: flex;
   position: relative;
   top: 110px;
   right: 490px;
+
+  @media (max-width: 1024px) {
+    top: 110px; // 모바일에서는 상단 여백을 더 줄입니다.
+    right: 350px; // 모바일에서는 오른쪽 여백을 더 줄입니다.
+  }
+  @media (max-width: 768px) {
+    top: 90px; // 모바일에서는 상단 여백을 더 줄입니다.
+    right: 220px; // 모바일에서는 오른쪽 여백을 더 줄입니다.
+  }
+  @media (max-width: 480px) {
+    top: 90px; // 모바일에서는 상단 여백을 더 줄입니다.
+    right: 110px; // 모바일에서는 오른쪽 여백을 더 줄입니다.
+  }
 `;
 
 const StyledLink = styled(Link)`
@@ -61,6 +77,10 @@ const CategoryButton = styled.button`
   }
 `;
 
+const FilterIcon = styled(TbAdjustmentsHorizontal)`
+  font-size: 1rem;
+`;
+
 const MainContent = styled.div`
   padding-top: 100px;
   padding-bottom: 100px;
@@ -104,23 +124,35 @@ const PaginationContainer = styled.div`
 `;
 
 const Button = styled.button`
-  padding: 5px 10px;
-  margin: 0 5px;
-  border: 1px solid #ccc;
-  background-color: #f9f9f9;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%; // 버튼을 원형으로 만듦
+  margin: 0 5px; // 버튼 사이에 약간의 공간을 둠
+  border: none; // 깔끔한 모양을 위해 테두리 없음
+  background-color: #000; // 검은색 배경
+  color: #fff; // 흰색 텍스트/아이콘 색상
+  display: flex;
+  justify-content: center; // 내용물을 가로 방향으로 가운데 정렬
+  align-items: center; // 내용물을 세로 방향으로 가운데 정렬
   cursor: pointer;
-  &:disabled {
-    color: #ccc;
-    cursor: not-allowed;
-  }
+  font-size: 1em; // 폰트 크기는 선호하는 대로 설정
+
   &:hover:not(:disabled) {
-    background-color: #eaeaea;
+    background-color: #333; // 호버 시 버튼을 어둡게 함
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 `;
 const PageNumber = styled.button`
   margin: 0 5px;
   border: none;
-  background-color: transparent;
+  background-color: ${(props) =>
+    props.current ? "#ddd" : "transparent"}; // Highlight the current page
+  font-weight: ${(props) =>
+    props.current ? "bold" : "normal"}; // Make the current page number bold
   cursor: pointer;
   &:hover {
     text-decoration: underline;
@@ -128,10 +160,20 @@ const PageNumber = styled.button`
 `;
 
 const ProductList = () => {
-  const { data: products } = useFetch("https://dummyjson.com/products");
-  const { currentData, next, prev, jump, currentPage, maxPage } = usePagination(products, 20);
-  const { goToProduct } = useRouting();
+  const { category } = useParams(); // 동적 파라미터 가져오기
+  const location = useLocation();
+  const apiUrl = `https://dummyjson.com/products?category=${category}`; // 동적으로 변경할 API URL에 카테고리 추가
+  const { data: products } = useFetch(apiUrl); // 변경된 훅 사용
+  const { currentData, next, prev, jump, currentPage, maxPage } = usePagination(
+    products,
+    16
+  );
 
+  const { goToProduct } = useRouting();
+  const displayCategory =
+    location.pathname === "/productlist/category"
+      ? "SHOW"
+      : category?.toUpperCase() || "CATEGORY";
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
 
@@ -148,9 +190,16 @@ const ProductList = () => {
   };
 
   useEffect(() => {
-    // 필터 옵션이 변경될 때마다 필터링된 결과를 업데이트
-    setFilteredProducts([]);
-  }, [products]);
+    if (products && category) {
+      const filteredData = products.filter(
+        (product) => product.category === category
+      );
+      setFilteredProducts(filteredData);
+    } else {
+      // 카테고리가 지정되지 않았거나, 유효하지 않은 경우 모든 상품을 보여줍니다.
+      setFilteredProducts(products);
+    }
+  }, [products, category]); // products 또는 category가 변경될 때마다 실행
 
   const handleModal = () => {
     if (isCategoryOpen) {
@@ -158,41 +207,82 @@ const ProductList = () => {
     }
   };
 
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+    });
+  };
+
+  const jumpToPage = (page) => {
+    jump(page);
+    scrollToTop();
+  };
+
   return (
     <>
       <Breadcrumbs>
-        <StyledLink to="/">Home</StyledLink>/SHOP ALL
+        <StyledLink to="/">Home</StyledLink>/{displayCategory} ALL
+        {/* 동적 파라미터 사용 */}
       </Breadcrumbs>
       <MainContent>
-        <ShowAll>SHOP All</ShowAll>
+        <ShowAll>{displayCategory} ALL </ShowAll>
         <FilterAndCategoryContainer>
-          <CategoryButton onClick={() => setIsCategoryOpen(true)}>Category</CategoryButton>
+          <CategoryButton onClick={() => setIsCategoryOpen(true)}>
+            <FilterIcon />
+            Category
+          </CategoryButton>
           <ProductListWithFilter onFilterChange={handleFilterChange} />
         </FilterAndCategoryContainer>
         <Grid>
-          {(filteredProducts.length > 0 ? filteredProducts : currentData()).map((product) => (
-            <ItemCard
-              key={product.id}
-              id={product.id}
-              images={product.images}
-              title={product.title}
-              price={product.price}
-              onClick={goToProduct}
-            />
-          ))}
+          {(filteredProducts.length > 0 ? filteredProducts : currentData()).map(
+            (product) => (
+              <ItemCard
+                key={product.id}
+                id={product.id}
+                images={product.images}
+                title={product.title}
+                price={product.price}
+                category={product.category}
+                colors={product.colors}
+                onClick={goToProduct}
+                onColorClick={(color) => {
+                  // 색상 선택 시 상품 상세 페이지로 이동하는 로직을 추가합니다.
+                  goToProduct(product.id, color);
+                }}
+              />
+            )
+          )}
         </Grid>
         <PaginationContainer>
-          <Button onClick={prev} disabled={currentPage === 1}>
-            Prev
-          </Button>
+          {currentPage !== 1 && (
+            <Button
+              onClick={() => {
+                prev();
+                scrollToTop();
+              }}
+            >
+              <SlArrowLeft />
+            </Button>
+          )}
           {Array.from({ length: maxPage }, (_, i) => (
-            <PageNumber key={i + 1} onClick={() => jump(i + 1)}>
+            <PageNumber
+              key={i + 1}
+              onClick={() => jumpToPage(i + 1)}
+              current={currentPage === i + 1}
+            >
               {i + 1}
             </PageNumber>
           ))}
-          <Button onClick={next} disabled={currentPage === maxPage}>
-            Next
-          </Button>
+          {currentPage !== maxPage && (
+            <Button
+              onClick={() => {
+                next();
+                scrollToTop();
+              }}
+            >
+              <SlArrowRight />
+            </Button>
+          )}
         </PaginationContainer>
       </MainContent>
       {ReactDOM.createPortal(

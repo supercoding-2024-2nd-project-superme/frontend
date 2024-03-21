@@ -11,8 +11,19 @@ const ProductDetailLayout = styled.div`
   padding-bottom: 150px; // 푸터 높이
   min-height: calc(100vh - 300px); // 전체 높이에서 헤더와 푸터 높이를 뺀 값
   display: flex;
-  margin-top: 20px;
   justify-content: center;
+  margin-top: 20px;
+  align-items: flex-start; // 컨텐츠를 상단으로 정렬합니다.
+`;
+
+const ProductDetailContainer = styled.div`
+  display: flex;
+  justify-content: space-between; // 컴포넌트 간의 공간을 최대한 활용합니다.
+  width: 100%; // 부모 요소에 꽉 차게 합니다.
+  max-width: 1200px; // 컴포넌트들이 너무 커지는 것을 방지합니다.
+
+  @media screen and (max-width: 768px) {
+    flex-direction: column; /* 화면이 작을 때 세로로 배치 */
 `;
 
 const DetailContainer = styled.div`
@@ -62,7 +73,9 @@ const ProductDetail = () => {
           // 스크롤을 상단으로 이동시킵니다.
           window.scrollTo(0, 0);
         })
-        .catch((error) => console.error("Error fetching product details:", error));
+        .catch((error) =>
+          console.error("Error fetching product details:", error)
+        );
     }
   }, [id]);
 
@@ -73,12 +86,15 @@ const ProductDetail = () => {
   return (
     <>
       <Breadcrumbs>
-        <StyledLink to="/">Home</StyledLink>/<ListLink to="/productlist">SHOP ALL</ListLink> /{" "}
+        <StyledLink to="/">Home</StyledLink>/
+        <ListLink to="/productlist/category">SHOP ALL</ListLink> /{" "}
         {product.title}
       </Breadcrumbs>
       <ProductDetailLayout>
-        <ProductImageGallery images={product.images[0]} title={product.title} />
-        <ProductInfo product={product} />
+        <ProductDetailContainer>
+          <ProductImageGallery images={product.images} title={product.title} />
+          <ProductInfo />
+        </ProductDetailContainer>
       </ProductDetailLayout>
       <ProductSubList />
     </>

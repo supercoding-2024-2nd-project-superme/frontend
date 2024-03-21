@@ -1,24 +1,30 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { styled } from "styled-components";
 import Paypal from "./Paypal";
-import CheckoutItems from "./CheckoutItems";
+import { loadDaumAddressAPI } from "../common/DaumAddressApi";
 
 const PaymentForm = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  //가상머니 잔액
-  const [balance, setBalance] = useState(200);
+  //주소검색
+  const [isAddressAPIInitialized, setIsAddressAPIInitialized] = useState(false);
+
   //장바구니 총액
   const [totalAmount, setTotalAmount] = useState(50);
   //결제여부
   const [isPaid, setIsPaid] = useState(false);
 
   const [objectState, setObjectState] = useState({
+    userId: "",
+    itemIds: [],
     email: "",
     name: "",
     phone: "",
     address: "",
     addressDetail: "",
-    cardNumber: "",
+    balance: "",
+    totalPrice: "",
+    orderDate: new Date(),
+    status: "",
   });
 
   const inputEmailHandler = (event) => {
@@ -42,19 +48,29 @@ const PaymentForm = () => {
     }));
   };
 
-  const inputPostCodeHandler = (event) => {
-    setObjectState((prevState) => ({
-      ...prevState,
-      postCode: event.target.value,
-    }));
+  //다음주소찾기
+  const addressSearchHandler = () => {
+    if (!isAddressAPIInitialized) {
+      setIsAddressAPIInitialized(true);
+      new window.daum.Postcode({
+        oncomplete: function (data) {
+          const { address } = data;
+          setObjectState((prevState) => ({
+            ...prevState,
+            address: address,
+          }));
+        },
+      }).open();
+    }
   };
 
-  const inputAddressHandler = (event) => {
-    setObjectState((prevState) => ({
-      ...prevState,
-      address: event.target.value,
-    }));
-  };
+  //다음주소찾기
+  useEffect(() => {
+    loadDaumAddressAPI().then(() => {
+      document.getElementById("customer-address").onclick =
+        addressSearchHandler;
+    });
+  }, []);
 
   const inputAddressDetailHandler = (event) => {
     setObjectState((prevState) => ({
@@ -63,154 +79,186 @@ const PaymentForm = () => {
     }));
   };
 
-  const inputCardNumberHandler = (event) => {
-    setObjectState((prevState) => ({
-      ...prevState,
-      cardNumber: event.target.value,
-    }));
-  };
-
-  const inputExpDateHandler = (event) => {
-    setObjectState((prevState) => ({
-      ...prevState,
-      expDate: event.target.value,
-    }));
-  };
-
-  const inputSecurityCodeHandler = (event) => {
-    setObjectState((prevState) => ({
-      ...prevState,
-      securityCode: event.target.value,
-    }));
-  };
-
-  const inputNameOnCardHandler = (event) => {
-    setObjectState((prevState) => ({
-      ...prevState,
-      nameOnCard: event.target.value,
-    }));
-  };
-
   const buttonSubmitHandler = (event) => {
     event.preventDefault();
     console.log(objectState);
-    if (balance >= totalAmount) {
-      setBalance(balance - totalAmount);
+    if (objectState.balance >= totalAmount) {
+      setObjectState((prevState) => ({
+        ...prevState,
+        balance: objectState.balance - totalAmount,
+      }));
       setIsPaid(true);
       alert("결제가 완료되었습니다.");
     } else {
       alert("잔액이 부족합니다.");
     }
 
-    setObjectState({
-      email: "",
-      name: "",
-      phone: "",
-      postCode: "",
-      address: "",
-      addressDetail: "",
-      cardNumber: "",
-      expDate: "",
-      securityCode: "",
-      nameOnCard: "",
-    });
+    //주문정보를 서버로 POST하는 함수
+    const sendOrderInfoToServer = async (objectState) => {
+      try {
+        const {
+          userId,
+          itemIds,
+          adress,
+          addressDetail,
+          totalPrice,
+          orderDate,
+          status,
+        } = objectState; // 주문 정보 추출
+
+        const requestBody = {
+          userId,
+          itemIds,
+          adress,
+          addressDetail,
+          totalPrice,
+          orderDate,
+          status,
+        };
+        const response = await fetch("/api/cart/order", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestBody),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to send order information to the server");
+        }
+
+        return await response.json(); // 성공적으로 보내진 경우 응답 데이터 반환
+      } catch (error) {
+        throw new Error("Failed to send order information to the server");
+      }
+    };
+
+    // 결제 완료 후 주문 정보 서버에 보내기
+    sendOrderInfoToServer(objectState)
+      .then((data) => {
+        console.log("주문 정보가 성공적으로 서버에 전송되었습니다.", data);
+        setObjectState({
+          email: "",
+          name: "",
+          phone: "",
+          address: "",
+          addressDetail: "",
+        });
+      })
+      .catch((error) => {
+        console.error("주문 정보 전송 중 오류가 발생했습니다.", error.message);
+      });
   };
 
   return (
     <Layout>
       <PaymentWrapper>
         <PaypalWrapper>
-          <div>Express Checkout</div>
-          <Paypal />
+          <PaypalText>Express Checkout</PaypalText>
+          <PaypalBtnWrapper>
+            <PaypalButton />
+          </PaypalBtnWrapper>
         </PaypalWrapper>
 
+        <OrContainer>
+          <OrLine />
+          <OrText>OR</OrText>
+        </OrContainer>
+
         <Form onSubmit={buttonSubmitHandler}>
+          {/* Contact */}
           <ContactWrapper>
-            {isLoggedIn ? (
-              <MemberContactWrapper>
-                <p>account</p>
-                {/* 이메일주소 데이터 받아서 넣아야함 */}
-                <p>로그인 되어 있습니다. 사용자 이메일주소</p>
-              </MemberContactWrapper>
-            ) : (
-              <GuestContactWrapper>
-                <label>Contact</label>
-                <input
-                  value={objectState.email}
-                  placeholder="Email"
-                  onChange={inputEmailHandler}
-                />
-              </GuestContactWrapper>
-            )}
+            <GuestContactWrapper>
+              <ContactTitleWrapper>
+                <ContactTitle htmlFor="contact">Contact</ContactTitle>
+                {!isLoggedIn && (
+                  <LoginLink href="http://localhost:3000/login">
+                    LOGIN
+                  </LoginLink>
+                )}
+              </ContactTitleWrapper>
+
+              <InputBox
+                value={objectState.email}
+                onChange={inputEmailHandler}
+                placeholder={isLoggedIn ? objectState.email : "Email"}
+                readOnly={isLoggedIn}
+              />
+              <CheckboxWrapper>
+                <CheckboxShell>
+                  <CheckboxInput type="checkbox" id="subscribeNews" />
+                </CheckboxShell>
+
+                <SubscribeLabel for="subscribeNews">
+                  Email me with news and offers
+                </SubscribeLabel>
+              </CheckboxWrapper>
+            </GuestContactWrapper>
           </ContactWrapper>
           <DeliveryWrapper>
-            <label>Delivery</label>
-            <input
+            <TitleWrapper>
+              <Title htmlFor="delivery">Delivery</Title>
+            </TitleWrapper>
+
+            <InputBox
               value={objectState.name}
-              placeholder="Name"
               onChange={inputNameHandler}
+              placeholder={isLoggedIn ? objectState.name : "Name"}
+              readOnly={isLoggedIn}
             />
 
-            <input
+            <InputBox
               value={objectState.phone}
-              placeholder="Phone number"
               onChange={inputPhoneHandler}
+              placeholder={isLoggedIn ? objectState.phone : "Phone number"}
             />
 
-            <input
-              value={objectState.postCode}
-              placeholder="Post code"
-              onChange={inputPostCodeHandler}
-            />
-
-            <input
+            <InputBox
+              type="text"
+              name="customer-address"
+              id="customer-address"
               value={objectState.address}
-              placeholder="Address"
-              onChange={inputAddressHandler}
+              placeholder={isLoggedIn ? objectState.phone : "Address"}
+              onClick={addressSearchHandler}
+              readOnly
             />
 
-            <input
-              value={objectState.addressDetail}
-              placeholder="Address detail"
+            <InputBox
               onChange={inputAddressDetailHandler}
+              placeholder={
+                isLoggedIn ? objectState.addressDetail : "Address detail"
+              }
+              value={objectState.addressDetail}
             />
           </DeliveryWrapper>
+
           <PaymentWrapper>
-            <div>Deposit Balance: ${balance}</div>
+            <TitleWrapper>
+              <Title htmlFor="payment">Payment</Title>
+            </TitleWrapper>
 
-            <label>Payment</label>
-            <input
-              value={objectState.cardNumber}
-              placeholder="Card number"
-              onChange={inputCardNumberHandler}
-            />
-            <CardDetailWrapper>
-              <input
-                value={objectState.expDate}
-                placeholder="Expiration date (MM/YY)"
-                onChange={inputExpDateHandler}
-              />
-
-              <input
-                value={objectState.securityCode}
-                placeholder="Security code"
-                onChange={inputSecurityCodeHandler}
-              />
-            </CardDetailWrapper>
-
-            <input
-              value={objectState.nameOnCard}
-              placeholder="Name on card"
-              onChange={inputNameOnCardHandler}
+            <InputBox
+              placeholder={
+                isLoggedIn
+                  ? "E-Money Balance: $" + objectState.balance
+                  : "Please login to pay with E-Money"
+              }
+              readOnly
             />
           </PaymentWrapper>
+
           <PayBtnWrapper>
-            <button type="submit">Pay now</button>
+            <PayNowBtn type="submit">Pay now</PayNowBtn>
           </PayBtnWrapper>
         </Form>
       </PaymentWrapper>
-
-      <CheckoutItems />
+      <FooterContainer>
+        <FooterText>Refund policy</FooterText>
+        <FooterText>Order & Shipment</FooterText>
+        <FooterText>Privacy policy</FooterText>
+        <FooterText>Terms of service</FooterText>
+        <FooterText>Legal notice</FooterText>
+      </FooterContainer>
     </Layout>
   );
 };
@@ -218,23 +266,14 @@ const PaymentForm = () => {
 export default PaymentForm;
 
 const Layout = styled.div`
-  display: flex;
   justify-content: center;
   align-items: center;
-  margin: 100px 0 100px 0;
-  width: 80vw;
-`;
-
-const PaymentWrapper = styled.div`
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  width: auto;
-  border-right: 1px solid grey;
-  input {
-    width: 100%;
-  }
+  margin-top: 89px;
+  width: 110%;
+  height: 100%;
+  border-right: 1px solid var(--color-lightgray);
+  padding-right: 35px;
+  padding-left: 200px;
 `;
 
 const PaypalWrapper = styled.div`
@@ -242,10 +281,49 @@ const PaypalWrapper = styled.div`
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  width: 70%;
+  height: 140px;
+  margin: 15px 0 15px 0;
+`;
+
+const PaypalText = styled.div`
+  margin-bottom: 25px;
+  font-size: 1.125rem;
+  color: lightgrey;
+`;
+
+const PaypalBtnWrapper = styled.div`
+  width: 100%;
+`;
+
+const PaypalButton = styled(Paypal)``;
+
+const OrContainer = styled.div`
+  position: relative;
+  text-align: center;
+  width: 100%;
+`;
+
+const OrLine = styled.div`
+  position: relative;
+  margin: 10px 0;
+  border-top: 1px solid var(--color-lightgray);
+`;
+
+const OrText = styled.span`
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: white;
+  padding: 0 5px;
+  color: lightgrey;
+  font-size: 1rem;
 `;
 
 const Form = styled.form`
   width: 100%;
+  margin: 25px 0 25px 0;
 `;
 
 const ContactWrapper = styled.div`
@@ -254,17 +332,6 @@ const ContactWrapper = styled.div`
   justify-content: center;
   align-items: center;
   width: auto;
-`;
-
-const MemberContactWrapper = styled.div`
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  input {
-    width: 100%;
-  }
 `;
 
 const GuestContactWrapper = styled.div`
@@ -278,24 +345,130 @@ const GuestContactWrapper = styled.div`
   }
 `;
 
+const ContactTitleWrapper = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin: 30px 0 17px 0;
+`;
+
+const ContactTitle = styled.label`
+  font-size: 1.5rem;
+`;
+
+const LoginLink = styled.a`
+  font-size: 1rem;
+  text-decoration: underline;
+`;
+
+const InputBox = styled.input`
+  height: 50px;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid var(--color-lightgray);
+  border-radius: 5px;
+  font-size: 1rem;
+  color: black;
+
+  &::placeholder {
+    font-size: 1rem;
+    color: black;
+  }
+`;
+
+const CheckboxWrapper = styled.div`
+  display: flex;
+  align-items: end;
+  width: 100%;
+`;
+
+const CheckboxShell = styled.div`
+  width: 20px;
+  margin-right: 5px;
+`;
+
+const CheckboxInput = styled.input`
+  width: 15px;
+  height: 15px;
+  &:checked {
+    accent-color: black;
+  }
+`;
+
+const SubscribeLabel = styled.label`
+  width: 500px;
+  font-size: 1rem;
+`;
+
 const DeliveryWrapper = styled.div`
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   width: auto;
+  margin-top: 40px;
   input {
     width: 100%;
   }
 `;
 
-const CardDetailWrapper = styled.div`
+const TitleWrapper = styled.div`
   display: flex;
+  justify-content: start;
   width: 100%;
+`;
+
+const Title = styled.label`
+  font-size: 1.5rem;
+  margin-bottom: 18px;
 `;
 
 const PayBtnWrapper = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
+  margin-bottom: 50px;
+`;
+
+const PaymentWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin-top: 42px;
+  input {
+    width: 100%;
+  }
+`;
+
+const PayNowBtn = styled.button`
+  width: 100%;
+  height: 60px;
+  margin-top: 50px;
+  background-color: #ff6d6d;
+  border: none;
+  border-radius: 5px;
+  font-size: 1.25rem;
+  color: white;
+
+  &:hover {
+    background-color: #ff2c2c;
+    cursor: pointer;
+  }
+`;
+
+const FooterContainer = styled.div`
+  display: flex;
+  justify-content: space-between;
+  padding-top: 15px;
+  border-top: 1px solid var(--color-lightgray);
+  height: 73px;
+  font-size: 0.875rem;
+`;
+
+const FooterText = styled.div`
+  text-decoration: underline;
+  cursor: pointer;
 `;

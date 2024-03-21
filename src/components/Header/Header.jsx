@@ -2,13 +2,12 @@ import React, { useState } from "react";
 import ReactDOM from "react-dom";
 import styled from "styled-components";
 import { RxHamburgerMenu } from "react-icons/rx";
-import { IoPersonOutline, IoSearchOutline, IoCartOutline } from "react-icons/io5";
+import { IoPersonOutline, IoSearchOutline, IoCartOutline, IoBagAddOutline } from "react-icons/io5";
 import { Link } from "react-router-dom";
 import MenuModal from "./MenuModal";
 import CartModal from "./CartModal";
 import SearchModal from "./SearchModal";
 import Backdrop from "../../common/Backdrop";
-
 
 const Layout = styled.header`
   position: fixed;
@@ -27,7 +26,7 @@ const Box = styled.div`
   margin: auto;
   padding: 0 2rem;
   width: 100%;
-  max-width: 1150px;
+  max-width: 1200px;
   min-width: 300px;
   height: 100%;
 `;
@@ -43,7 +42,7 @@ const Logo = styled.img`
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  @media screen and (max-width: 400px) {
+  @media screen and (max-width: 500px) {
     display: none;
   }
 `;
@@ -53,6 +52,11 @@ const CustomLink = styled(Link)`
 `;
 
 const Hamburger = styled(RxHamburgerMenu)`
+  font-size: 1.5rem;
+  cursor: pointer;
+`;
+
+const Registration = styled(IoBagAddOutline)`
   font-size: 1.5rem;
   cursor: pointer;
 `;
@@ -100,6 +104,9 @@ export default function Header() {
           />
         </CustomLink>
         <Nav>
+          <Link to="/registration">
+            <Registration />
+          </Link>
           <CustomLink to="/login">
             <Person />
           </CustomLink>

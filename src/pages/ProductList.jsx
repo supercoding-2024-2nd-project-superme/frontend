@@ -129,10 +129,7 @@ const PageNumber = styled.button`
 
 const ProductList = () => {
   const { data: products } = useFetch("https://dummyjson.com/products");
-  const { currentData, next, prev, jump, currentPage, maxPage } = usePagination(
-    products,
-    20
-  );
+  const { currentData, next, prev, jump, currentPage, maxPage } = usePagination(products, 20);
   const { goToProduct } = useRouting();
 
   const [filteredProducts, setFilteredProducts] = useState([]);
@@ -169,24 +166,20 @@ const ProductList = () => {
       <MainContent>
         <ShowAll>SHOP All</ShowAll>
         <FilterAndCategoryContainer>
-          <CategoryButton onClick={() => setIsCategoryOpen(true)}>
-            Category
-          </CategoryButton>
+          <CategoryButton onClick={() => setIsCategoryOpen(true)}>Category</CategoryButton>
           <ProductListWithFilter onFilterChange={handleFilterChange} />
         </FilterAndCategoryContainer>
         <Grid>
-          {(filteredProducts.length > 0 ? filteredProducts : currentData()).map(
-            (product) => (
-              <ItemCard
-                key={product.id}
-                id={product.id}
-                images={product.images}
-                title={product.title}
-                price={product.price}
-                onClick={goToProduct}
-              />
-            )
-          )}
+          {(filteredProducts.length > 0 ? filteredProducts : currentData()).map((product) => (
+            <ItemCard
+              key={product.id}
+              id={product.id}
+              images={product.images}
+              title={product.title}
+              price={product.price}
+              onClick={goToProduct}
+            />
+          ))}
         </Grid>
         <PaginationContainer>
           <Button onClick={prev} disabled={currentPage === 1}>

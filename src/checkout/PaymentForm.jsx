@@ -2,18 +2,23 @@ import React, { useEffect, useState } from "react";
 import { styled } from "styled-components";
 import Paypal from "./Paypal";
 import { loadDaumAddressAPI } from "../common/DaumAddressApi";
+import { useSelector } from "react-redux";
 
 const PaymentForm = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   //주소검색
   const [isAddressAPIInitialized, setIsAddressAPIInitialized] = useState(false);
 
-  //장바구니 총액
-  const [totalAmount, setTotalAmount] = useState(50);
+  //장바구니 내용과 총액 전역상태에서 받아오기
+  const cartItems = useSelector((state) => state.cartInfo.cartItems);
   //결제여부
   const [isPaid, setIsPaid] = useState(false);
+  //유저정보 (로그인 되어있을 경우)
+  const [userInfo, setUserInfo] = useState(null);
 
-  const [objectState, setObjectState] = useState({
+  const [checkbox, setCheckbox] = useState(true);
+
+  const [objectOrderState, setObjectOrderState] = useState({
     userId: "",
     itemIds: [],
     email: "",
@@ -28,21 +33,21 @@ const PaymentForm = () => {
   });
 
   const inputEmailHandler = (event) => {
-    setObjectState((prevState) => ({
+    setObjectOrderState((prevState) => ({
       ...prevState,
       email: event.target.value,
     }));
   };
 
   const inputNameHandler = (event) => {
-    setObjectState((prevState) => ({
+    setObjectOrderState((prevState) => ({
       ...prevState,
       name: event.target.value,
     }));
   };
 
   const inputPhoneHandler = (event) => {
-    setObjectState((prevState) => ({
+    setObjectOrderState((prevState) => ({
       ...prevState,
       phone: event.target.value,
     }));
@@ -55,7 +60,7 @@ const PaymentForm = () => {
       new window.daum.Postcode({
         oncomplete: function (data) {
           const { address } = data;
-          setObjectState((prevState) => ({
+          setObjectOrderState((prevState) => ({
             ...prevState,
             address: address,
           }));
@@ -73,19 +78,64 @@ const PaymentForm = () => {
   }, []);
 
   const inputAddressDetailHandler = (event) => {
-    setObjectState((prevState) => ({
+    setObjectOrderState((prevState) => ({
       ...prevState,
       addressDetail: event.target.value,
     }));
   };
 
+  //로그인 되어 있을 시 유저 정보 받아온다.
+  useEffect(() => {
+    // 페이지가 처음 렌더링될 때 실행되는 로직
+    const fetchUserInfo = async () => {
+      const token = localStorage.getItem("token");
+      const email = localStorage.getItem("email");
+
+      if (token && email) {
+        try {
+          // 사용자 정보 요청 (엔드포인트,형식 수정 필요)
+          const response = await fetch("/api/user/info", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ email: email }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch user info");
+          }
+
+          const userData = await response.json(); // 서버에서 반환된 사용자 정보를 JSON으로 파싱
+
+          // * 기호를 기준으로 주소를 분리하여 address와 addressDetail에 할당
+          const [address, addressDetail] = userData.fullAddress.split("*");
+
+          // address와 addressDetail을 사용하여 객체를 구성
+          const modifiedData = {
+            ...userData,
+            address: address,
+            addressDetail: addressDetail,
+          };
+
+          setUserInfo(modifiedData); // 가져온 사용자 정보를 상태로 저장
+        } catch (error) {
+          console.error("Error fetching user info:", error);
+        }
+      }
+    };
+
+    fetchUserInfo(); // 함수 호출하여 사용자 정보 가져오기
+  }, []); // 최초 렌더링 시 한 번만 실행
+
   const buttonSubmitHandler = (event) => {
     event.preventDefault();
-    console.log(objectState);
-    if (objectState.balance >= totalAmount) {
-      setObjectState((prevState) => ({
+    console.log(objectOrderState);
+    if (objectOrderState.balance >= cartItems.totalAmount) {
+      setObjectOrderState((prevState) => ({
         ...prevState,
-        balance: objectState.balance - totalAmount,
+        balance: objectOrderState.balance - cartItems.totalAmount,
       }));
       setIsPaid(true);
       alert("결제가 완료되었습니다.");
@@ -94,28 +144,30 @@ const PaymentForm = () => {
     }
 
     //주문정보를 서버로 POST하는 함수
-    const sendOrderInfoToServer = async (objectState) => {
+    const sendOrderInfoToServer = async (objectOrderState) => {
       try {
         const {
           userId,
           itemIds,
-          adress,
+          address,
           addressDetail,
           totalPrice,
           orderDate,
           status,
-        } = objectState; // 주문 정보 추출
+        } = objectOrderState; // 주문 정보 추출
+
+        // 두 주소를 합치고 사이에 별* 추가
+        const fullAddress = `${address} * ${addressDetail}`;
 
         const requestBody = {
-          userId,
-          itemIds,
-          adress,
-          addressDetail,
-          totalPrice,
-          orderDate,
-          status,
+          userId: userId,
+          itemIds: itemIds, //이게 아닌거 같은데
+          fullAddress: fullAddress, // fullAddress를 사용
+          totalPrice: totalPrice,
+          orderDate: new Date(),
+          status: "ordered", //??임의로 넣음
         };
-        const response = await fetch("/api/cart/order", {
+        const response = await fetch("/api/carts/order", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -133,11 +185,11 @@ const PaymentForm = () => {
       }
     };
 
-    // 결제 완료 후 주문 정보 서버에 보내기
-    sendOrderInfoToServer(objectState)
+    // 결제 완료 후 주문 정보 서버로 POST 요청, 상태값 (+placeholder) 초기화
+    sendOrderInfoToServer(objectOrderState)
       .then((data) => {
         console.log("주문 정보가 성공적으로 서버에 전송되었습니다.", data);
-        setObjectState({
+        setObjectOrderState({
           email: "",
           name: "",
           phone: "",
@@ -179,14 +231,19 @@ const PaymentForm = () => {
               </ContactTitleWrapper>
 
               <InputBox
-                value={objectState.email}
+                value={objectOrderState.email}
                 onChange={inputEmailHandler}
-                placeholder={isLoggedIn ? objectState.email : "Email"}
+                placeholder={isLoggedIn ? objectOrderState.email : "Email"}
                 readOnly={isLoggedIn}
               />
               <CheckboxWrapper>
                 <CheckboxShell>
-                  <CheckboxInput type="checkbox" id="subscribeNews" />
+                  <CheckboxInput
+                    type="checkbox"
+                    id="subscribeNews"
+                    checked={checkbox}
+                    onChange={() => setCheckbox((prev) => !prev)}
+                  />
                 </CheckboxShell>
 
                 <SubscribeLabel for="subscribeNews">
@@ -201,24 +258,24 @@ const PaymentForm = () => {
             </TitleWrapper>
 
             <InputBox
-              value={objectState.name}
+              value={objectOrderState.name}
               onChange={inputNameHandler}
-              placeholder={isLoggedIn ? objectState.name : "Name"}
+              placeholder={isLoggedIn ? objectOrderState.name : "Name"}
               readOnly={isLoggedIn}
             />
 
             <InputBox
-              value={objectState.phone}
+              value={objectOrderState.phone}
               onChange={inputPhoneHandler}
-              placeholder={isLoggedIn ? objectState.phone : "Phone number"}
+              placeholder={isLoggedIn ? objectOrderState.phone : "Phone number"}
             />
 
             <InputBox
               type="text"
               name="customer-address"
               id="customer-address"
-              value={objectState.address}
-              placeholder={isLoggedIn ? objectState.phone : "Address"}
+              value={objectOrderState.address}
+              placeholder={isLoggedIn ? objectOrderState.phone : "Address"}
               onClick={addressSearchHandler}
               readOnly
             />
@@ -226,9 +283,9 @@ const PaymentForm = () => {
             <InputBox
               onChange={inputAddressDetailHandler}
               placeholder={
-                isLoggedIn ? objectState.addressDetail : "Address detail"
+                isLoggedIn ? objectOrderState.addressDetail : "Address detail"
               }
-              value={objectState.addressDetail}
+              value={objectOrderState.addressDetail}
             />
           </DeliveryWrapper>
 
@@ -240,7 +297,7 @@ const PaymentForm = () => {
             <InputBox
               placeholder={
                 isLoggedIn
-                  ? "E-Money Balance: $" + objectState.balance
+                  ? "E-Money Balance: $" + objectOrderState.balance
                   : "Please login to pay with E-Money"
               }
               readOnly

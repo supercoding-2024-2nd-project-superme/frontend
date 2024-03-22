@@ -108,23 +108,7 @@ const UsdText = styled.div`
 `;
 
 const CheckoutItems = () => {
-  const cartItems = useSelector((state) => state.selectedQuantity.cartItems);
-
-  const [totalAmount, setTotalAmount] = useState(0);
-
-  //장바구니 총 금액 업데이트
-  useEffect(() => {
-    const eachItemTotalAmountArr = cartItems.map(
-      (item) => item.quantity * item.price
-    );
-
-    setTotalAmount(
-      eachItemTotalAmountArr.reduce(
-        (total, amoutPerItem) => total + amoutPerItem,
-        0
-      )
-    );
-  }, [cartItems]);
+  const cartItems = useSelector((state) => state.cartInfo.cartItems);
 
   return (
     <Layout>
@@ -152,7 +136,7 @@ const CheckoutItems = () => {
       <CheckoutWrapper>
         <SubTotalWrapper>
           <div>Subtotal</div>
-          <div>${totalAmount}</div>
+          <div>${cartItems.totalAmount}</div>
         </SubTotalWrapper>
         <ShippingWrapper>
           <div>Shipping</div>
@@ -163,7 +147,7 @@ const CheckoutItems = () => {
 
           <TotalUsd>
             <UsdText>USD </UsdText>
-            <div>${totalAmount}</div>
+            <div>${cartItems.totalAmount}</div>
           </TotalUsd>
         </TotalWrapper>
       </CheckoutWrapper>

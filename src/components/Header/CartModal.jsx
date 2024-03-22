@@ -4,10 +4,11 @@ import styled from "styled-components";
 import Paypal from "../../checkout/Paypal";
 import { v4 as uuid4 } from "uuid";
 import { useDispatch, useSelector } from "react-redux";
-import selectedQuantity, {
+import cartInfo, {
   decrement,
   increment,
-} from "../../store/modules/selectedQuantity";
+  setInitialState,
+} from "../../store/modules/cartInfo";
 
 const Layout = styled.div`
   position: fixed;
@@ -35,6 +36,14 @@ const CartWrapper = styled.div`
   top: 0px;
   background-color: white;
   overflow: hidden;
+`;
+
+const CartItemsEmpty = styled.div`
+  display: flex;
+  justify-content: start;
+  width: 100%;
+  margin: 40px 0 0 50px;
+  color: grey;
 `;
 
 const CartText = styled.div`
@@ -88,6 +97,7 @@ const BtnPriceWrapper = styled.div`
 const QtyControlBtn = styled.button`
   background-color: transparent;
   border: none;
+  font-size: 1.2rem;
 `;
 
 const Text = styled.div`
@@ -153,45 +163,43 @@ const CartOverlay = ({ isModalOpen, handleModal }) => {
   //컴포넌트에서 Action을 Dispatch
   const dispatch = useDispatch();
 
-  const cartItems = useSelector((state) => state.selectedQuantity.cartItems);
+  const cartItems = useSelector((state) => state.cartInfo.cartItems);
 
-  const [totalAmount, setTotalAmount] = useState(0);
-
-  //장바구니 총 금액 업데이트
   useEffect(() => {
-    const eachItemTotalAmountArr = cartItems.map(
-      (item) => item.quantity * item.price
-    );
+    // 서버에 요청하여 카트 정보 받아오기
+    const fetchInitialCartData = async () => {
+      try {
+        // 서버에 GET 요청 보내기
+        const response = await fetch("/api/carts/cart/{userId}");
+        if (!response.ok) {
+          throw new Error("Failed to fetch initial cart data");
+        }
+        const initialCartData = await response.json(); // 응답 데이터 파싱
 
-    setTotalAmount(
-      eachItemTotalAmountArr.reduce(
-        (total, amoutPerItem) => total + amoutPerItem,
-        0
-      )
-    );
-  }, [cartItems]);
+        //total amount 계산 및 추가
+        //total amount 계산
+        const eachItemTotalAmountArr = initialCartData.cartItems.map(
+          (item) => item.count * item.price
+        );
+        const totalAmountCalculated = eachItemTotalAmountArr.reduce(
+          (total, amoutPerItem) => total + amoutPerItem,
+          0
+        );
+        // totalAmount가 추가된 updatedCartData를 생성
+        const updatedcartData = {
+          ...initialCartData,
+          totalAmount: totalAmountCalculated,
+        };
 
-  //useEffect(() => {
-  //  // 서버에 요청하여 카트 정보 받아오기
-  //  const fetchInitialCartData = async () => {
-  //    try {
-  //      const response = await fetch("/api/carts/cart/{userId}");
-  //      // 서버에 GET 요청 보내기, 추후 수정 필요
+        // 받아온 데이터를 사용하여 카트 업데이트 액션 디스패치
+        dispatch(setInitialState(updatedcartData));
+      } catch (error) {
+        console.error("Failed to fetch initial cart data:", error.message);
+      }
+    };
 
-  //        if (!response.ok) {
-  //        throw new Error("Failed to fetch initial cart data");
-  //      }
-
-  //      const initialCartData = await response.json(); // 응답 데이터 파싱
-  //      // 받아온 데이터를 사용하여 카트 업데이트 액션 디스패치
-  //      dispatch(setInitialState(initialCartData));
-  //    } catch (error) {
-  //      console.error("Failed to fetch initial cart data:", error.message);
-  //    }
-  //  };
-
-  //  fetchInitialCartData(); // 함수 호출하여 초기 카트 데이터 받아오기
-  //}, []); // 처음 한번만 렌더링
+    fetchInitialCartData(); // 함수 호출하여 초기 카트 데이터 받아오기
+  }, []); // 처음 한번만 렌더링
 
   //수량버튼 클릭시 카트정보 업데이트 요청
   const handleUpdateCart = async () => {
@@ -251,68 +259,77 @@ const CartOverlay = ({ isModalOpen, handleModal }) => {
       <CartWrapper>
         <CartText>Cart</CartText>
       </CartWrapper>
-      <ItemList>
-        {cartItems.map((item) => (
-          <BoxItem key={uuid4()}>
-            <img
-              src={item.main_img}
-              width="130px"
-              height="130px"
-              style={{ objectFit: "cover" }}
-            />
-            <Description>
-              <Text>{item.name}</Text>
-              <TextSize>
-                {item.color}/{item.size}
-              </TextSize>
 
-              <BtnPriceWrapper>
-                <ButtonBox>
-                  <QtyControlBtn
-                    onClick={async () => {
-                      //수량감소
-                      dispatch(decrement(item.itemId));
-                      //업데이트된 카트 정보를 DB에 저장
-                      await handleUpdateCart();
-                    }}
-                  >
-                    -
-                  </QtyControlBtn>
-                  {item.quantity}
-                  <QtyControlBtn
-                    onClick={async () => {
-                      //수량증가
-                      dispatch(increment(item.itemId));
-                      //업데이트된 카트 정보를 DB에 저장
-                      await handleUpdateCart();
-                    }}
-                  >
-                    +
-                  </QtyControlBtn>
-                </ButtonBox>
-                <Text>${item.price}</Text>
-              </BtnPriceWrapper>
-            </Description>
-          </BoxItem>
-        ))}
-      </ItemList>
-      <CheckoutWrapper>
-        <SubTotalWrapper>
-          <div>SUBTOTAL</div>
-          <div>${totalAmount}</div>
-        </SubTotalWrapper>
-        <ExtraCostDesc>
-          Shipping, taxes, and discount codes calculated at checkout.
-        </ExtraCostDesc>
+      {cartItems.length === 0 ? (
+        <CartItemsEmpty>
+          <div>Your cart is currently empty.</div>
+        </CartItemsEmpty>
+      ) : (
+        <>
+          <ItemList>
+            {cartItems.map((item) => (
+              <BoxItem key={uuid4()}>
+                <img
+                  src={item.main_img}
+                  width="130px"
+                  height="130px"
+                  style={{ objectFit: "cover" }}
+                />
+                <Description>
+                  <Text>{item.name}</Text>
+                  <TextSize>
+                    {item.color}/{item.size}
+                  </TextSize>
 
-        <BtnCheckout href="http://localhost:3000/payment">
-          <div>Check Out</div>
-        </BtnCheckout>
+                  <BtnPriceWrapper>
+                    <ButtonBox>
+                      <QtyControlBtn
+                        onClick={async () => {
+                          //수량감소
+                          dispatch(decrement(item.itemId));
+                          //업데이트된 카트 정보를 DB에 저장
+                          await handleUpdateCart();
+                        }}
+                      >
+                        -
+                      </QtyControlBtn>
+                      {item.count}
+                      <QtyControlBtn
+                        onClick={async () => {
+                          //수량증가
+                          dispatch(increment(item.itemId));
+                          //업데이트된 카트 정보를 DB에 저장
+                          await handleUpdateCart();
+                        }}
+                      >
+                        +
+                      </QtyControlBtn>
+                    </ButtonBox>
+                    <Text>${item.price}</Text>
+                  </BtnPriceWrapper>
+                </Description>
+              </BoxItem>
+            ))}
+          </ItemList>
+          <CheckoutWrapper>
+            <SubTotalWrapper>
+              <div>SUBTOTAL</div>
+              <div>${cartItems.totalAmount}</div>
+            </SubTotalWrapper>
+            <ExtraCostDesc>
+              Shipping, taxes, and discount codes calculated at checkout.
+            </ExtraCostDesc>
 
-        <PaypalWrapper>
-          <Paypal />
-        </PaypalWrapper>
-      </CheckoutWrapper>
+            <BtnCheckout href="http://localhost:3000/payment">
+              <div>Check Out</div>
+            </BtnCheckout>
+
+            <PaypalWrapper>
+              <Paypal />
+            </PaypalWrapper>
+          </CheckoutWrapper>
+        </>
+      )}
     </Layout>
   );
 };

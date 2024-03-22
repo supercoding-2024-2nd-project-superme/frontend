@@ -4,14 +4,18 @@ import styled from "styled-components";
 import Paypal from "../../checkout/Paypal";
 import { v4 as uuid4 } from "uuid";
 import { useDispatch, useSelector } from "react-redux";
-import selectedQuantity, { decrement, increment } from "../../store/modules/selectedQuantity";
+import cartInfo, {
+  decrement,
+  increment,
+  setInitialState,
+} from "../../store/modules/cartInfo";
 
 const Layout = styled.div`
   position: fixed;
   right: ${(props) => (props.$isModalOpen ? "0" : "-200%")};
   opacity: ${(props) => (props.$isModalOpen ? "1" : "0")};
   top: 0;
-  width: 550px;
+  width: 500px;
   height: 100%;
   z-index: 1500;
   transition: all 0.5s;
@@ -27,15 +31,23 @@ const CartWrapper = styled.div`
   width: 450px;
   display: flex;
   align-items: center;
-  border-bottom: 1px solid grey;
+  border-bottom: 1px solid var(--color-lightgray);
   position: fixed;
   top: 0px;
   background-color: white;
   overflow: hidden;
 `;
 
+const CartItemsEmpty = styled.div`
+  display: flex;
+  justify-content: start;
+  width: 100%;
+  margin: 40px 0 0 50px;
+  color: grey;
+`;
+
 const CartText = styled.div`
-  font-size: 2rem;
+  font-size: 1.875rem;
 `;
 
 const ItemList = styled.div`
@@ -68,7 +80,7 @@ const ButtonBox = styled.div`
   align-items: center;
   width: 80px;
   height: 30px;
-  border: 1px solid grey;
+  border: 1px solid var(--color-lightgray);
   font-size: 1.125;
   color: grey;
   margin-top: 15px;
@@ -85,6 +97,7 @@ const BtnPriceWrapper = styled.div`
 const QtyControlBtn = styled.button`
   background-color: transparent;
   border: none;
+  font-size: 1.2rem;
 `;
 
 const Text = styled.div`
@@ -102,7 +115,7 @@ const CheckoutWrapper = styled.div`
   align-content: center;
   height: 350px;
   width: 450px;
-  border-top: 1px solid grey;
+  border-top: 1px solid var(--color-lightgray);
   position: fixed;
   bottom: 0px;
   overflow: hidden;
@@ -126,7 +139,10 @@ const ExtraCostDesc = styled.div`
   white-space: nowrap; //텍스트 한줄로
 `;
 
-const BtnCheckout = styled.button`
+const BtnCheckout = styled.a`
+  display: flex;
+  justify-content: center;
+  align-items: center;
   width: 100%;
   height: 48px;
   margin: 10px 0 15px 0;
@@ -147,138 +163,173 @@ const CartOverlay = ({ isModalOpen, handleModal }) => {
   //컴포넌트에서 Action을 Dispatch
   const dispatch = useDispatch();
 
-  const SelectedQuantity = useSelector((state) => state.selectedQuantity.number);
+  const cartItems = useSelector((state) => state.cartInfo.cartItems);
 
-  const [totalAmount, setTotalAmount] = useState(0);
-  //임시데이터
-  const [cartItems, setCartItems] = useState([
-    {
-      id: "user1",
-      item_id: "4536662830136",
-      main_img: "https://danton.com/cdn/shop/files/DNB241L103-0012_10_1800x1800.jpg?v=1708062882",
-      item_name: "【STORE EXCLUSIVE】WOMEN'S SWEAT SHIRTS",
-      ordered_qty: 1,
-      orderd_color: "BLUE",
-      ordered_size: "38",
-      price: 125,
-      added_at: new Date(),
-    },
-    {
-      id: "user1",
-      item_id: "4536606430737",
-      main_img:
-        "https://danton.com/cdn/shop/files/DNB241M104-0017_color_410_1800x1800.jpg?v=1708582832",
-      item_name: "MEN'S WORK SHIRT",
-      ordered_qty: 1,
-      orderd_color: "LGT GRY",
-      ordered_size: "40",
-      price: 198,
-      added_at: new Date(),
-    },
-    {
-      id: "user1",
-      item_id: "4554H489AA",
-      main_img:
-        "https://danton.com/cdn/shop/files/DNB241L103-0006_color_070_1800x1800.jpg?v=1707375086",
-      item_name: "WOMEN'S LONG SLEEVE SWEAT T-SHIRT",
-      ordered_qty: 1,
-      orderd_color: "SAX",
-      ordered_size: "XS",
-      price: 106,
-      added_at: new Date(),
-    },
-    {
-      id: "user1",
-      item_id: "4535364070099",
-      main_img:
-        "https://danton.com/cdn/shop/files/DNB241U303-0012_color_016_1800x1800.jpg?v=1709117816",
-      item_name: "POLYESTER STRETCH BUCKET HAT",
-      ordered_qty: 1,
-      orderd_color: "BLACK",
-      ordered_size: "F",
-      price: 80,
-      added_at: new Date(),
-    },
-  ]);
-
-  //장바구니 총 금액 업데이트
   useEffect(() => {
-    const eachItemTotalAmountArr = cartItems.map((item) => selectedQuantity * item.price);
+    // 서버에 요청하여 카트 정보 받아오기
+    const fetchInitialCartData = async () => {
+      try {
+        // 서버에 GET 요청 보내기
+        const response = await fetch("/api/carts/cart/{userId}");
+        if (!response.ok) {
+          throw new Error("Failed to fetch initial cart data");
+        }
+        const initialCartData = await response.json(); // 응답 데이터 파싱
 
-    setTotalAmount(eachItemTotalAmountArr.reduce((total, amoutPerItem) => total + amoutPerItem, 0));
-  }, [cartItems]);
+        //total amount 계산 및 추가
+        //total amount 계산
+        const eachItemTotalAmountArr = initialCartData.cartItems.map(
+          (item) => item.count * item.price
+        );
+        const totalAmountCalculated = eachItemTotalAmountArr.reduce(
+          (total, amoutPerItem) => total + amoutPerItem,
+          0
+        );
+        // totalAmount가 추가된 updatedCartData를 생성
+        const updatedcartData = {
+          ...initialCartData,
+          totalAmount: totalAmountCalculated,
+        };
 
-  //수량 감소
-  //const decreaseQty = (item) => {
-  //  setCartItems((prevState) => {
-  //    const newCartItems = prevState.map((cartItem) => {
-  //      if (cartItem.item_id === item.item_id && cartItem.//ordered_qty > 0) {
-  //        return {
-  //           ...cartItem,
-  //           ordered_qty: cartItem.ordered_qty - 1,
-  //         };
-  //       }
-  //       return cartItem;
-  //     });
-  //
-  //     // 수량이 0인 아이템 제거
-  //     return newCartItems.filter((cartItem) => cartItem.//ordered_qty > 0);
-  //   });
-  // };
+        // 받아온 데이터를 사용하여 카트 업데이트 액션 디스패치
+        dispatch(setInitialState(updatedcartData));
+      } catch (error) {
+        console.error("Failed to fetch initial cart data:", error.message);
+      }
+    };
 
-  //수량 증가
-  //const increaseQty = (item) => {
-  //  console.log(item);
-  //  setCartItems((prevState) => {
-  //    const newCartItems = [...prevState];
-  //    const selectedItem = newCartItems.find(
-  //      (cartItem) => cartItem.item_id === item.item_id
-  //    );
-  //    if (selectedItem) {
-  //      selectedItem.ordered_qty += 1;
-  //    }
-  //    return newCartItems;
-  //  });
-  //};
+    fetchInitialCartData(); // 함수 호출하여 초기 카트 데이터 받아오기
+  }, []); // 처음 한번만 렌더링
+
+  //수량버튼 클릭시 카트정보 업데이트 요청
+  const handleUpdateCart = async () => {
+    try {
+      await saveCartToDB(cartItems);
+      console.log("카트 정보 업데이트 요청 성공");
+    } catch (error) {
+      console.error(
+        "카트 정보 업데이트 요청 중 오류가 발생했습니다.에러메세지:",
+        error.message
+      );
+    }
+  };
+
+  //수량 업데이트된 카트 정보를 서버에 저장.
+  const saveCartToDB = async (cartItems) => {
+    try {
+      const { itemId, color, size, quantity } = cartItems; // 카트 아이템 정보 추출
+      //수량이 1 이상인 경우 PUT요청 보내기
+      if (quantity >= 1) {
+        const requestBody = {
+          itemId,
+          color,
+          size,
+          quantity,
+        };
+        const response = await fetch("/api/cart/items/{cartItemId}", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestBody),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to save cart data to the server");
+        }
+        return await response.json(); //저장 성공시 응답 데이터 반환
+      } else if (quantity < 1) {
+        // 수량이 1보다 작은 경우 DELETE 요청 보내기
+        const response = await fetch(`/api/cart/items/{cartItemId}`, {
+          method: "DELETE",
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to delete cart item from the server");
+        }
+        return "Cart item deleted successfully";
+      }
+    } catch (error) {
+      throw new Error("Failed to save cart data to the server");
+    }
+  };
 
   return (
     <Layout $isModalOpen={isModalOpen}>
       <CartWrapper>
         <CartText>Cart</CartText>
       </CartWrapper>
-      <ItemList>
-        {cartItems.map((item) => (
-          <BoxItem key={uuid4()}>
-            <img src={item.main_img} width="130px" height="130px" style={{ objectFit: "cover" }} />
-            <Description>
-              <Text>{item.item_name}</Text>
-              <TextSize>
-                {item.orderd_color}/{item.ordered_size}
-              </TextSize>
 
-              <BtnPriceWrapper>
-                <ButtonBox>
-                  <QtyControlBtn onClick={() => dispatch(decrement())}>-</QtyControlBtn>
-                  {SelectedQuantity}
-                  <QtyControlBtn onClick={() => dispatch(increment())}>+</QtyControlBtn>
-                </ButtonBox>
-                <Text>${item.price}</Text>
-              </BtnPriceWrapper>
-            </Description>
-          </BoxItem>
-        ))}
-      </ItemList>
-      <CheckoutWrapper>
-        <SubTotalWrapper>
-          <div>SUBTOTAL</div>
-          <div>${totalAmount}</div>
-        </SubTotalWrapper>
-        <ExtraCostDesc>Shipping, taxes, and discount codes calculated at checkout.</ExtraCostDesc>
-        <BtnCheckout>Check Out</BtnCheckout>
-        <PaypalWrapper>
-          <Paypal />
-        </PaypalWrapper>
-      </CheckoutWrapper>
+      {cartItems.length === 0 ? (
+        <CartItemsEmpty>
+          <div>Your cart is currently empty.</div>
+        </CartItemsEmpty>
+      ) : (
+        <>
+          <ItemList>
+            {cartItems.map((item) => (
+              <BoxItem key={uuid4()}>
+                <img
+                  src={item.main_img}
+                  width="130px"
+                  height="130px"
+                  style={{ objectFit: "cover" }}
+                />
+                <Description>
+                  <Text>{item.name}</Text>
+                  <TextSize>
+                    {item.color}/{item.size}
+                  </TextSize>
+
+                  <BtnPriceWrapper>
+                    <ButtonBox>
+                      <QtyControlBtn
+                        onClick={async () => {
+                          //수량감소
+                          dispatch(decrement(item.itemId));
+                          //업데이트된 카트 정보를 DB에 저장
+                          await handleUpdateCart();
+                        }}
+                      >
+                        -
+                      </QtyControlBtn>
+                      {item.count}
+                      <QtyControlBtn
+                        onClick={async () => {
+                          //수량증가
+                          dispatch(increment(item.itemId));
+                          //업데이트된 카트 정보를 DB에 저장
+                          await handleUpdateCart();
+                        }}
+                      >
+                        +
+                      </QtyControlBtn>
+                    </ButtonBox>
+                    <Text>${item.price}</Text>
+                  </BtnPriceWrapper>
+                </Description>
+              </BoxItem>
+            ))}
+          </ItemList>
+          <CheckoutWrapper>
+            <SubTotalWrapper>
+              <div>SUBTOTAL</div>
+              <div>${cartItems.totalAmount}</div>
+            </SubTotalWrapper>
+            <ExtraCostDesc>
+              Shipping, taxes, and discount codes calculated at checkout.
+            </ExtraCostDesc>
+
+            <BtnCheckout href="http://localhost:3000/payment">
+              <div>Check Out</div>
+            </BtnCheckout>
+
+            <PaypalWrapper>
+              <Paypal />
+            </PaypalWrapper>
+          </CheckoutWrapper>
+        </>
+      )}
     </Layout>
   );
 };

@@ -2,7 +2,12 @@ import React, { useState } from "react";
 import ReactDOM from "react-dom";
 import styled from "styled-components";
 import { RxHamburgerMenu } from "react-icons/rx";
-import { IoPersonOutline, IoSearchOutline, IoCartOutline, IoBagAddOutline } from "react-icons/io5";
+import {
+  IoPersonOutline,
+  IoSearchOutline,
+  IoCartOutline,
+  IoBagAddOutline,
+} from "react-icons/io5";
 import { Link } from "react-router-dom";
 import MenuModal from "./MenuModal";
 import CartModal from "./CartModal";
@@ -15,7 +20,7 @@ const Layout = styled.header`
   height: 90px;
   background-color: var(--color-white);
   border-bottom: 1px solid var(--color-lightgray);
-  z-index: 10;
+  z-index: 110;
 `;
 
 const Box = styled.div`

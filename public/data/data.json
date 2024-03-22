@@ -1,0 +1,30 @@
+{
+  "id": "user1",
+  "cartItemId": "1",
+  "items": [
+    {
+      "itemId ": "4536662830136",
+      "main_img ": "링크"
+      "name ": "SWEAT SHIRTS",
+      "quantity ": 1,
+      "color ": "BLUE",
+      "size ": "38",
+      " price ": 125,
+    },
+    {
+      
+    }
+  ]
+
+ {
+itemId: "333",
+      main_img: "링크"
+      name: "New",
+      quantity: 1,
+      color: "BLUE",
+      size: "36",
+      price: 125,
+}
+  added_at: new Date(),
+}
+},

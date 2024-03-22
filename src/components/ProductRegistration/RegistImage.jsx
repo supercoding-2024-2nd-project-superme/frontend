@@ -160,7 +160,7 @@ export default function RegistImage({ handleFiles }) {
         {imgs.length > 0 ? (
           <>
             <Slider {...settings} ref={sliderMain}>
-              {imgs.map((img, index) => (
+              {imgs.map((img) => (
                 <SlideImg src={img} key={uuid4()} alt="mainImg" $imgSize={imgSize} />
               ))}
             </Slider>

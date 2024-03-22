@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import RegistImage from "../components/ProductRegistration/RegistImage";
 import RegistInfo from "../components/ProductRegistration/RegistInfo";
@@ -47,13 +47,7 @@ const SubmitBtn = styled.button`
 `;
 
 export default function Registration() {
-  const [form, setForm] = useState({
-    categoryName: "Select Category",
-    itemName: "",
-    price: "",
-    description: "",
-    itemStocks: [initItemStocks],
-  });
+  const [form, setForm] = useState(initForm);
   const [files, setFiles] = useState([]);
 
   const handleFiles = (files) => {
@@ -91,7 +85,17 @@ export default function Registration() {
 
   const handleItemStocksAdd = (type) => {
     if (type === "plus") {
-      setForm((prev) => ({ ...prev, itemStocks: [...prev.itemStocks, initItemStocks] }));
+      setForm((prev) => ({
+        ...prev,
+        itemStocks: [
+          ...prev.itemStocks,
+          {
+            color: "",
+            size: "",
+            stockQty: 1,
+          },
+        ],
+      }));
     } else {
       if (form.itemStocks.length > 1) {
         setForm((prev) => ({ ...prev, itemStocks: prev.itemStocks.slice(0, -1) }));
@@ -103,22 +107,24 @@ export default function Registration() {
     e.preventDefault();
 
     const formData = new FormData();
-    formData.append("files", files);
-    formData.append("product", form);
+    formData.append("itemRequest", JSON.stringify(form));
 
-    const data = await fetch(
+    for (let i = 0; i < files.length; i++) {
+      formData.append("file", files[i]);
+    }
+
+    await fetch(
       "http://ec2-52-79-241-164.ap-northeast-2.compute.amazonaws.com:8080/api/sales/items",
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: formData,
       }
     ).then((res) => res.json());
-
-    console.log(data);
   };
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   return (
     <Layout onSubmit={handleSubmit}>
@@ -139,8 +145,16 @@ export default function Registration() {
   );
 }
 
-const initItemStocks = {
-  color: "",
-  size: "",
-  stockQty: 1,
+const initForm = {
+  categoryName: "Select Category",
+  itemName: "",
+  price: "",
+  description: "",
+  itemStocks: [
+    {
+      color: "",
+      size: "",
+      stockQty: 1,
+    },
+  ],
 };

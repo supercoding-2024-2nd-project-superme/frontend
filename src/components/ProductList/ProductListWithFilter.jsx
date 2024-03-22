@@ -37,6 +37,8 @@ const ProductListWithFilter = ({ onFilterChange }) => {
         <option value="All">All</option>
         <option value="price_low_high">Price: Low to High</option>
         <option value="price_high_low">Price: High to Low</option>
+        <option value="recently_registered">Recently registered</option>
+        <option value="previous_registration">Previous registration</option>
         {/* 추가적인 필터 옵션 */}
       </FilterDropdown>
     </FilterDropdownContainer>

@@ -1,22 +1,27 @@
 import React, { useEffect, useState } from "react";
+import ReactDOM from "react-dom";
 import styled from "styled-components";
-import { FaTruck } from "react-icons/fa";
+import { FaTruck, FaCircle } from "react-icons/fa";
+import { FaChevronDown, FaChevronUp } from "react-icons/fa";
+import CartModal from "../Header/CartModal";
+import Backdrop from "../../common/Backdrop";
 
-// 컨테이너 섹션 스타일
+// JSON 데이터 import
+import data from "../db/data.json";
+import { useNavigate } from "react-router-dom";
+
 const Container = styled.section`
   display: flex;
   flex-direction: column;
-  width: 650px; // 제품 정보의 너비
+  width: 550px; // 제품 정보의 너비
   padding: 20px;
   border-radius: 8px;
   margin: 0 auto; // 중앙 정렬
   background: #ffffff;
-  @media (max-width: 650px) {
-    // When the viewport width is 650px or less, switch to grid layout
-    display: grid;
-    grid-template-columns: 1fr; // Single column grid
-    width: 100%; // Full width of the container
-    // Add any additional grid settings you may need
+
+  @media (max-width: 768px) {
+    width: 450px; // Full width of the container
+    // You can also adjust padding, margins, etc. as needed
   }
 `;
 
@@ -34,12 +39,52 @@ const Price = styled.span`
   padding-bottom: 40px; // 가격 아래 여백 추가
 `;
 
-// 색상 선택 옵션 스타일
+const ShippingAndStockContainer = styled.div`
+  display: flex;
+  flex-direction: column; // 항목들을 세로로 쌓음
+  align-items: flex-start; // 항목들을 왼쪽 정렬
+  margin-bottom: 20px;
+`;
+
+const ShippingInfo = styled.span`
+  display: flex;
+  align-items: center; // Center align the text with the truck icon
+  margin-right: 20px; // Space between the shipping and stock information
+`;
+
+const StockInfo = styled.span`
+  display: flex;
+  align-items: center; // Center align the text with the circle icon
+  color: ${(props) =>
+    props.inStock ? "green" : "red"}; // Color based on stock status
+  margin-bottom: 10px;
+`;
+
+const IconWrapper = styled.span`
+  margin-right: 5px; // Space between the icon and the text
+`;
+
+const InStockIcon = styled(FaCircle)`
+  color: green; // Green color for in stock
+  font-size: 10px; // Smaller icon size
+`;
+
+const OutOfStockIcon = styled(FaCircle)`
+  color: red; // Red color for out of stock
+  font-size: 10px; // Smaller icon size
+`;
+
+const ColorNameDisplay = styled.div`
+  font-size: 14px;
+  margin-bottom: 20px; // Adjust the margin as needed
+  position: relative;
+  top: -20px;
+  left: -80px;
+`;
+
 const ColorSelector = styled.div`
-  display: flex; // 색상 옵션들을 가로로 나열
-  flex-direction: column; // 요소들을 세로로 쌓기 위해 변경
-  align-items: flex-start; // 요소들을 왼쪽 정렬
-  margin-bottom: 16px; // 다음 요소와의 여백
+  display: flex; // 플렉스박스 사용
+  align-items: flex-end; // 요소들을 수직 방향으로 아래쪽에 정렬
 `;
 
 // 색상 옵션 버튼 스타일
@@ -58,46 +103,21 @@ const ColorOption = styled.button`
   }
   // 선택된 색상에 대한 스타일
   ${(props) =>
-    props.isSelected &&
+    props.$isSelected &&
     `
   border: 2px solid black; // 선택 시 테두리 굵게
 `}
 `;
 
-// 색상 선택기 위치 고정을 위한 컨테이너
-const ColorSelectorContainer = styled.div`
-  position: relative;
-  width: 100%;
-  height: 50px; // 충분한 높이를 주어 색상 이름을 표시할 공간 확보
-`;
-
-// 색상 이름 스타일
-const ColorName = styled.span`
-  font-weight: bold; // 글꼴 볼드
-  margin-bottom: 1px; // 라벨 아래 여백
-`;
-
-const ColorOptionsContainer = styled.div`
-  display: flex; // 옵션들을 가로로 나열
-`;
-
-const SizeOptionsContainer = styled.div`
-  display: flex; // 옵션들을 가로로 나열
-`;
-
-// 사이즈 라벨 스타일
-const SizeLabel = styled.p`
-  font-weight: bold; // 글꼴 볼드
-  margin-bottom: 10px; // 라벨 아래 여백
-`;
-
 // 사이즈 선택 옵션 스타일
 const SizeSelector = styled.div`
-  display: flex; // 사이즈 옵션들을 가로로 나열
-  flex-direction: column; // 요소들을 세로로 쌓기 위해 변경
-  align-items: flex-start; // 요소들을 왼쪽 정렬
-  margin-top: 20px;
+  margin-top: 30px;
   margin-bottom: 25px;
+`;
+
+const SizeHeading = styled.div`
+  font-size: 16px;
+  margin-bottom: 20px;
 `;
 
 // 사이즈 옵션 버튼 스타일
@@ -116,284 +136,327 @@ const SizeOption = styled.button`
   }
   // 선택된 사이즈에 대한 스타일
   ${(props) =>
-    props.isSelected &&
+    props.$isSelected &&
     `
   border: 2px solid black; // 선택 시 테두리 굵게
   font-weight: bold; // 선택 시 글꼴 볼드
 `}
 `;
 
-const ShippingInfo = styled.p`
-  display: flex; // 아이콘과 텍스트를 위한 플렉스 컨테이너
-  align-items: center; // 아이콘과 텍스트 수직 중앙 정렬
-  margin-top: 10px; // 사이즈 선택기와의 상단 여백
-  font-size: 14px; // 텍스트 크기
-  svg {
-    margin-right: 10px; // 아이콘과 텍스트 사이 간격
-  }
+const Button = styled.button`
+  padding: 10px 20px;
+  font-size: 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  outline: none;
 `;
 
-// '장바구니에 추가' 버튼 스타일
-const AddToCartButton = styled.button`
-  background-color: white;
-  color: black;
-  padding: 10px 20px;
-  border: 2px solid black;
-  cursor: pointer;
-  margin-top: 30px;
-  margin-bottom: 10px; // 버튼 간 여백
+const ButtonContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px; // 버튼 사이 간격 조정
+`;
+
+const AddToCartButton = styled(Button)`
+  background-color: #ffffff;
+  color: #000000;
+  border: 1px solid #cccccc;
   display: flex;
   justify-content: center; // 가로축으로 텍스트를 중앙 정렬
   align-items: center; // 세로축으로 텍스트를 중앙 정렬
-  position: relative; // after의용 클래스를 위한 상대적 위치 설정
-  &:hover {
-    background-color: #f5f5f5; // 호버 배경색
-    &:after {
-      content: "→"; // 호버 시 화살표
-      display: block;
-      position: absolute; // 버튼 내 절대적 위치
-      right: 10px; // 오른쪽 끝에서 10px 떨어진 곳에 위치
-    }
-  }
-`;
-
-// 'Shop Pay로 구매' 버튼 스타일
-const ActionButton = styled.button`
-  background-color: #5c6ac4; // Shop Pay 버튼 색상
-  color: white;
   padding: 10px 20px;
-  border: none;
+  font-size: 16px;
   cursor: pointer;
-  margin-bottom: 5px; // 버튼 간 여백
-  &:hover {
-    background-color: #4a5aa1; // 호버 배경색 변경
+  overflow: hidden; // 내용이 버튼 밖으로 나가는 것을 방지
+  position: relative; // after의용 클래스를 위한 상대적 위치 설정
+
+  // 버튼 호버 상태일 때만 화살표를 표시합니다.
+  &:hover:after {
+    content: "→"; // 호버 시 화살표
+    display: block;
+    position: absolute; // 버튼 내 절대적 위치
+    right: 10px; // 오른쪽 끝에서 10px 떨어진 곳에 위치
+  }
+
+  // 화살표는 기본 상태에서는 보이지 않습니다.
+  &:after {
+    content: "";
+    display: none;
   }
 `;
 
-const MorePaymentOptions = styled.p`
-  color: #555; // 글자 색상
-  font-size: 14px; // 글자 크기
-  text-align: center; // 중앙 정렬
-  margin-top: 10px; // 버튼과의 상단 여백
-  cursor: pointer; // 클릭 가능 표시
-  &:hover {
-    text-decoration: underline; // 호버 시 밑줄
-  }
-  margin-bottom: px;
+const BuyButton = styled(Button)`
+  background-color: #6f42c1; // 예시로 선택한 색상
+  color: #ffffff;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
 `;
 
-const DetailHeader = styled.h2`
-  font-size: 18px; // 제목 글꼴 크기
-  font-weight: bold; // 제목 글꼴 두께
-  border-bottom: 1px solid #ccc;
-  margin-bottom: 10px;
-  padding-bottom: 10px;
+const MoreOptionsButton = styled.button`
+  background: none;
+  border: none;
+  color: #000000;
+  padding: 10px 20px;
+  font-size: 16px;
+  text-decoration: underline;
+  cursor: pointer;
 `;
-// 상세정보 리스트 스타일
+
+const Details = styled.div`
+  font-size: 16px; // 원하는 글꼴 크기로 조정
+  color: #333; // 글씨 색상 조정
+  line-height: 1.6; // 줄 간격 조정
+  margin-top: 20px;
+`;
+
 const DetailList = styled.ul`
-  list-style: none; // 기본 리스트 스타일 제거
-  padding-left: 0; // 기본 패딩 제거
+  list-style-type: disc; // 목록 스타일
+  padding-left: 20px; // 목록 내용 들여쓰기 조정
+  margin-top: 10px;
 `;
 
-// 상세정보 리스트 항목 스타일
 const DetailItem = styled.li`
-  font-size: 14px; // 리스트 항목 글꼴 크기
-  &:before {
-    content: "•"; // 불릿 대신 사용할 문자
-    margin-right: 8px; // 문자와 텍스트 사이의 여백
-    color: black; // 문자 색상
-  }
+  margin-bottom: 10px; // 목록 항목 간 간격 조정
+`;
+
+const DetailsHeading = styled.h2`
+  padding-bottom: 10px; // 선과 텍스트 사이의 간격
+  border-bottom: 1px solid gray;
 `;
 
 const SizeChartContainer = styled.div`
-  margin-top: 20px; // 상단 여백
+  margin-top: 20px; // Size chart와 그 위 요소와의 간격
 `;
 
-// 표 제목 스타일
-const SizeChartTitle = styled.p`
-  font-size: 18px; // 제목 글꼴 크기
-  font-weight: bold; // 제목 글꼴 두께
-  margin-bottom: 10px; // 표와의 여백
-  border-bottom: 1px solid #ccc;
-  padding-bottom: 20px;
+const SizeChartHeading = styled.h2`
+  font-size: 18px; // Heading 사이즈 조정
+  margin-bottom: 20px; // Heading과 테이블 사이의 간격, 원하는 값으로 조정하세요
+  font-weight: normal; // Heading 두께 조정
+  border-bottom: 1px solid gray; // 헤더 셀의 하단 테두리
+  padding-bottom: 10px; // 여기를 조정하여 선과 글자의 간격을 넓힐 수 있습니다
 `;
 
-// 표 스타일
 const SizeChartTable = styled.table`
-  width: 100%; // 전체 너비 사용
-  border-collapse: collapse; // 테두리 겹치기 방지
-  margin-bottom: 20px; // 하단 여백
+  width: 100%;
+  border-collapse: collapse; // 테이블 셀 사이의 테두리 없애기
+  margin-bottom: 10px; // 모델 정보와의 간격
 `;
 
-// 표의 헤더 셀 스타일
-const SizeChartHeader = styled.th`
-  text-align: center; // 왼쪽 정렬
-  font-size: 14px; // 글꼴 크기
-  padding-bottom: 10px; // 셀 아래쪽 패딩
+const TableHeader = styled.th`
+  border-bottom: 1px solid #000; // 헤더 셀의 하단 테두리
+  padding: 8px; // 셀 패딩
+  text-align: left; // 텍스트 왼쪽 정렬
 `;
 
-// 표의 행 셀 스타일
-const SizeChartCell = styled.td`
-  text-align: center; // 왼쪽 정렬
-  font-size: 14px; // 글꼴 크기
-  padding: 8px 0; // 셀 상하 패딩
+const TableCell = styled.td`
+  border-bottom: 1px solid #ccc; // 셀의 하단 테두리
+  padding: 8px; // 셀 패딩
 `;
 
-const NoticeHeader = styled.p`
-  text-transform: uppercase;
-  font-size: 15px;
-  margin-bottom: 10px; // 여백을 없애거나 조절하세요
+const ModelInfo = styled.p`
+  font-size: 14px; // 모델 정보의 텍스트 사이즈
+  color: #666; // 텍스트 색상 조정
+`;
+
+const InventoryNoticeContainer = styled.div`
+  margin-top: 20px;
+  border-bottom: 1px solid #ccc; // 토글된 내용 아래에 표시되는 하단 선
+`;
+
+const InventoryHeading = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0; // 텍스트와 상단 선 사이 간격
   cursor: pointer;
 `;
 
-const ToggleButton = styled.span`
-  font-size: 15px; // Chevron 사이즈에 맞게 조절
-  cursor: pointer;
-  user-select: none; // 텍스트 선택 방지
-
-  &::after {
-    content: "${(props) =>
-      props.isExpanded ? "▲" : "▼"}"; // 상태에 따라 아이콘 변경
-    display: inline-block;
-    margin-left: 5px;
-    transition: transform 0.2s ease; // 부드러운 아이콘 회전을 위한 트랜지션
-    transform: ${(props) => (props.isExpanded ? "rotate(180deg)" : "none")};
-  }
+const InventoryContent = styled.div`
+  display: ${(props) => (props.isOpen ? "block" : "none")};
+  padding: 10px 0; // 텍스트와 하단 선 사이 간격
 `;
 
-const Description = styled.div`
-  max-height: ${(props) => (props.isExpanded ? "100%" : "0")};
-  overflow: hidden;
-  transition: max-height 0.2s ease-out;
-  border-bottom: 1px solid #ccc;
+const ToggleIcon = styled.span`
+  font-size: 16px;
 `;
 
 // 상품 정보 컴포넌트
-const ProductInfo = ({ product }) => {
-  useEffect(() => {
-    if (colorData.length > 0) {
-      setSelectedColor(colorData[0].color);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // 색상 및 사이즈 데이터
-  const colorData = [
-    { color: "#FF4136", name: "Red" },
-    { color: "#2ECC40", name: "Green" },
-    { color: "#0074D9", name: "Blue" },
-  ];
-  const sizes = ["S", "M", "L", "XL"]; // 실제 제품 사이즈에 맞춰 교체 필요
-  const [isDescriptionExpanded, setDescriptionExpanded] = useState(false);
-  const [selectedColor, setSelectedColor] = useState(null); // 선택된 색상 상태 추가
+const ProductInfo = () => {
+  const colors = data.colors;
+  const sizes = data.sizes;
+  const inStock = data.availability.inStock;
+  const navigate = useNavigate();
+  const [selectedColor, setSelectedColor] = useState(null);
   const [selectedSize, setSelectedSize] = useState(null);
+  const [isCartmodalOpen, setisCartmodalOpen] = useState(false);
+  const [isInventoryOpen, setIsInventoryOpen] = useState(false);
 
-  // 색상 및 사이즈 선택 핸들러
   const handleSelectColor = (color) => {
-    console.log("Selected color:", color);
     setSelectedColor(color);
   };
 
+  // 사이즈 선택 핸들러
   const handleSelectSize = (size) => {
     setSelectedSize(size);
-    console.log("Selected size:", size);
   };
 
+  const handleModal = () => {
+    if (isCartmodalOpen) {
+      setisCartmodalOpen(false);
+    }
+  };
+
+  const toggleInventory = () => {
+    setIsInventoryOpen(!isInventoryOpen);
+  };
+
+  // 장바구니 핸들러 함수
   const handleAddToCart = () => {
-    console.log("Added to cart");
+    // 상품 정보와 선택된 옵션을 이용하여 장바구니에 상품을 추가하는 로직
+    const newItem = {
+      productName: data.productName,
+      price: data.price,
+      selectedColor,
+      selectedSize,
+    };
+    // 장바구니에 상품 추가하는 함수 호출
+    console.log("Added to cart:", newItem);
+    setisCartmodalOpen(true);
   };
 
-  const handleToggleDescription = () => {
-    setDescriptionExpanded(!isDescriptionExpanded);
+  // 구매 핸들러 함수
+  const handleBuy = () => {
+    // 상품 정보와 선택된 옵션을 이용하여 구매하는 로직
+    const newItem = {
+      productName: data.productName,
+      price: data.price,
+      selectedColor,
+      selectedSize,
+    };
+    // 구매 처리하는 함수 호출
+    navigate("/payment", { state: { item: newItem } });
+
+    console.log("Buy now:", newItem);
   };
+
+  useEffect(() => {
+    // 해당 부분에서 필요한 useEffect 로직을 추가합니다.
+  }, []);
+
+  // 기타 상태 및 핸들러 함수들은 생략합니다.
 
   return (
     <Container>
-      <Title>{product.title}</Title>
-      <Price>${product.price}</Price>
-      <ColorSelectorContainer>
-        <ColorSelector>
-          {selectedColor && (
-            <ColorName>
-              COLOR — {colorData.find((c) => c.color === selectedColor).name}
-            </ColorName>
-          )}
-          <ColorOptionsContainer>
-            {colorData.map(({ color, name }) => (
-              <ColorOption
-                key={color}
-                color={color}
-                onClick={() => handleSelectColor(color)}
-                isSelected={selectedColor === color}
-              />
-            ))}
-          </ColorOptionsContainer>
-        </ColorSelector>
-      </ColorSelectorContainer>
+      <Title>{data.productName}</Title>
+      <Price>${data.price}</Price>
+      {/* 색상 선택 UI */}
+      <ColorSelector>
+        {colors.map((color) => (
+          <ColorOption
+            key={color.hexCode}
+            color={color.hexCode}
+            onClick={() => handleSelectColor(color.hexCode)}
+            $isSelected={selectedColor === color.hexCode}
+          />
+        ))}
+        <ColorNameDisplay>
+          {selectedColor
+            ? `COLOR — ${colors.find((c) => c.hexCode === selectedColor).name}`
+            : "Select a color"}
+        </ColorNameDisplay>
+      </ColorSelector>
+      {/* 사이즈 선택 UI */}
       <SizeSelector>
-        <SizeLabel>Size</SizeLabel>
-        <SizeOptionsContainer>
-          {sizes.map((size) => (
-            <SizeOption
-              key={size}
-              onClick={() => handleSelectSize(size)}
-              isSelected={selectedSize === size}
-            >
-              {size}
-            </SizeOption>
-          ))}
-        </SizeOptionsContainer>
+        <SizeHeading>SIZE</SizeHeading>
+        {sizes.map((size) => (
+          <SizeOption
+            key={size}
+            onClick={() => handleSelectSize(size)}
+            $isSelected={selectedSize === size}
+          >
+            {size}
+          </SizeOption>
+        ))}
       </SizeSelector>
-      <ShippingInfo>
-        <FaTruck /> Free shipping for orders over USD${product.price}
-      </ShippingInfo>
-      <AddToCartButton onClick={handleAddToCart}>Add to Cart</AddToCartButton>
-      <ActionButton onClick={handleAddToCart}>Buy with Shop Pay</ActionButton>
-      <MorePaymentOptions>More payment options</MorePaymentOptions>
-      <DetailHeader>DETAILS</DetailHeader>
-      <DetailList>
-        <DetailItem>
-          Only on DANTON online store and directly managed stores (TOKYO / KOBE)
-        </DetailItem>
-        <DetailItem>
-          A basic sweatshirt with moderately relaxed fitting
-        </DetailItem>
-        <DetailItem>A soft and lightweight texture lining</DetailItem>
-        <DetailItem>
-          Accented with the DANTON logo print on the chest
-        </DetailItem>
-        <DetailItem>88% Cotton, 12% Polyester</DetailItem>
-        <DetailItem>Rib: 80% Cotton, 20% Polyester</DetailItem>
-        <DetailItem>Made in China</DetailItem>
-      </DetailList>
+      {/* 데이터에 따라 동적으로 UI를 생성할 수 있습니다. */}
+      <ShippingAndStockContainer>
+        <ShippingInfo>
+          <FaTruck />
+          <IconWrapper>
+            Free shipping for orders over USD${data.price}
+          </IconWrapper>
+        </ShippingInfo>
+        <StockInfo inStock={inStock}>
+          {inStock ? (
+            <>
+              <InStockIcon />
+              <span>In stock, ready to ship</span>
+            </>
+          ) : (
+            <>
+              <OutOfStockIcon />
+              <span>Out of stock</span>
+            </>
+          )}
+        </StockInfo>
+      </ShippingAndStockContainer>
+      {/* 장바구니 버튼, 구매 버튼 등의 UI 코드 */}
+      <ButtonContainer>
+        <AddToCartButton onClick={handleAddToCart}>Add to Cart</AddToCartButton>
+        <BuyButton onClick={handleBuy}>Buy with Shop Pay</BuyButton>
+        <MoreOptionsButton>More payment options</MoreOptionsButton>
+      </ButtonContainer>
+      <Details>
+        <DetailsHeading>Details</DetailsHeading>
+        <DetailList>
+          {data.details.map((detail, index) => (
+            <DetailItem key={index}>{detail}</DetailItem>
+          ))}
+        </DetailList>
+      </Details>
       <SizeChartContainer>
-        <SizeChartTitle>SIZE & FIT (cm)</SizeChartTitle>
+        <SizeChartHeading>SIZE & FIT (cm)</SizeChartHeading>
         <SizeChartTable>
           <thead>
             <tr>
-              <SizeChartHeader>SIZE</SizeChartHeader>
-              <SizeChartHeader>BODY LENGTH</SizeChartHeader>
-              <SizeChartHeader>BODY WIDTH</SizeChartHeader>
-              <SizeChartHeader>SLEEVE LENGTH</SizeChartHeader>
+              <TableHeader>Size</TableHeader>
+              <TableHeader>Waist (cm)</TableHeader>
+              <TableHeader>Rise (cm)</TableHeader>
+              <TableHeader>Inseam (cm)</TableHeader>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <SizeChartCell>size</SizeChartCell>
-              <SizeChartCell>bodyLength</SizeChartCell>
-              <SizeChartCell>bodyWidth</SizeChartCell>
-              <SizeChartCell>sleeveLength</SizeChartCell>
-            </tr>
+            {data.sizeFit.map((item) => (
+              <tr key={item.size}>
+                <TableCell>{item.size}</TableCell>
+                <TableCell>{item.waist}</TableCell>
+                <TableCell>{item.rise}</TableCell>
+                <TableCell>{item.inseam}</TableCell>
+              </tr>
+            ))}
           </tbody>
         </SizeChartTable>
+        <ModelInfo>MODEL: {data.modelInfo.height}</ModelInfo>
+        <ModelInfo>SIZE: {data.modelInfo.wearingSize}</ModelInfo>
       </SizeChartContainer>
-      <NoticeHeader onClick={handleToggleDescription}>
-        Notice of Inventory
-        <ToggleButton isExpanded={isDescriptionExpanded} />
-      </NoticeHeader>
-      <Description isExpanded={isDescriptionExpanded}>
-        {product.description}
-      </Description>
+      <InventoryNoticeContainer>
+        <InventoryHeading onClick={toggleInventory}>
+          NOTICE OF INVENTORY
+          <ToggleIcon>
+            {isInventoryOpen ? <FaChevronUp /> : <FaChevronDown />}
+          </ToggleIcon>
+        </InventoryHeading>
+        <InventoryContent isOpen={isInventoryOpen}>
+          <p>{data.inventoryNotice}</p>
+        </InventoryContent>
+      </InventoryNoticeContainer>
+      {ReactDOM.createPortal(
+        <Backdrop isModalOpen={isCartmodalOpen} handleModal={handleModal} />,
+        document.getElementById("backdrop")
+      )}
+      <CartModal isModalOpen={isCartmodalOpen} handleModal={handleModal} />
     </Container>
   );
 };

@@ -97,7 +97,8 @@ const ArrowDownIcon = styled(MdKeyboardArrowDown)`
   right: -0.3rem;
   font-size: 1.5rem;
   transition: all 0.5s;
-  transform: ${(props) => (props.$isStoreOpen ? "rotate(180deg)" : "rotate(0deg)")};
+  transform: ${(props) =>
+    props.$isStoreOpen ? "rotate(180deg)" : "rotate(0deg)"};
   cursor: pointer;
 `;
 
